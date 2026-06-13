@@ -17,7 +17,8 @@ PCOLS = [("Ewan","I","J"),("Nana","L","M"),("Emrys","O","P"),("Nonno","R","S"),
          ("Autumn","AD","AE"),("River","AG","AH")]
 CHAMPS = {"Ewan":"Spain","Nana":"France","Nonno":"Brazil","Boompa":"France"}
 PHOTOS = {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg",
-          "Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg"}
+          "Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg",
+          "Boompa":"boompa-bobblehead.jpg"}
 
 def pts(ph, pa, ah, aa):
     if None in (ph, pa, ah, aa): return None
