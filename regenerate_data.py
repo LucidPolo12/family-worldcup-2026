@@ -28,16 +28,34 @@ def pts(ph, pa, ah, aa):
 def main():
     wb = openpyxl.load_workbook(XLSX)
     ws = wb["Match Predictions"]
+
+    # Results come from results.json (owned & auto-filled by the GitHub Action) merged
+    # with any scores typed directly into the spreadsheet's G/H columns. results.json wins.
+    rstore = {}
+    rpath = os.path.join(HERE, "results.json")
+    if os.path.exists(rpath):
+        try:
+            rstore = {int(k): v for k, v in json.load(open(rpath, encoding="utf-8")).items()}
+        except Exception:
+            rstore = {}
+
     results = {}
+    for r in range(4, 108):
+        n = r - 3
+        g, h = ws["G"+str(r)].value, ws["H"+str(r)].value
+        if n in rstore:
+            results[n] = rstore[n]
+        elif g is not None and h is not None:
+            results[n] = [g, h]
+    # "generated" = date of the first match with no result yet (the next slate to pick)
     generated = None
     for r in range(4, 108):
-        g, h = ws["G"+str(r)].value, ws["H"+str(r)].value
-        if g is not None and h is not None:
-            results[r-3] = [g, h]
-        elif generated is None:
-            d = ws["B"+str(r)].value          # first unplayed match's date = next slate
+        if (r - 3) not in results:
+            d = ws["B"+str(r)].value
             generated = d.strftime("%Y-%m-%d") if d else None
-    mres = {r-3: (ws["G"+str(r)].value, ws["H"+str(r)].value) for r in range(4, 108)}
+            break
+    mres = {n: (results[n][0], results[n][1]) if n in results else (None, None)
+            for n in range(1, 105)}
 
     standings = []
     for name, hc, ac in PCOLS:

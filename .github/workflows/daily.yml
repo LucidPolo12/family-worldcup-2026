@@ -1,0 +1,48 @@
+name: Daily World Cup update
+
+# Runs every morning ~8am Central, plus a manual "Run workflow" button.
+on:
+  schedule:
+    - cron: "0 13 * * *"   # 13:00 UTC ≈ 8:00 AM CT (after late games finish)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write          # allow the workflow to commit results back to the repo
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install openpyxl
+
+      - name: Enter finished group-stage scores
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python update_scores.py || echo "score fetch skipped this run"
+
+      - name: Rebuild data.json (standings)
+        run: python regenerate_data.py
+
+      - name: Refresh win/draw/win odds (non-fatal if it hiccups)
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python fetch_odds.py || echo "odds refresh skipped this run"
+
+      - name: Commit & push if anything changed
+        run: |
+          git config user.name "WC Auto Updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add results.json data.json
+          if git diff --staged --quiet; then
+            echo "No changes today."
+          else
+            git commit -m "Daily auto-update: scores, standings & odds"
+            git push
+          fi
