@@ -118,6 +118,16 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .pseg.ph{background:#1aa75a}.pseg.pd{background:#97a4ad}.pseg.pa{background:#2f6fd0}
 .pbl{grid-column:1/-1;display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px}
 .pbl .pdash{font-weight:800;color:#8794a0}
+.wtbl{width:100%;border-collapse:collapse;font-size:13px}
+.wtbl th{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:800}
+.wtbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.wtbl tr:last-child td{border-bottom:none}
+.wtbl .yr{font-weight:900;color:var(--g1);white-space:nowrap}
+.wtbl .win{font-weight:800;white-space:nowrap}
+.helpwrap .hq{font-weight:900;font-size:14.5px;margin:16px 0 4px}
+.helpwrap .hq:first-child{margin-top:2px}
+.helpwrap p{font-size:13.5px;color:var(--ink);margin:0 0 7px;line-height:1.5}
+.helptip{background:#fffbe9;border:1px solid #f3e6b0;border-radius:10px;padding:8px 11px;font-size:12.5px;margin:6px 0 4px;line-height:1.45}
 </style>
 </head>
 <body>
@@ -134,6 +144,8 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <a href="#bracket">🌐 Bracket</a>
   <a href="#facts">💡 Fun Facts</a>
   <a href="#news">📰 News</a>
+  <a href="#winners">🏆 Past Winners</a>
+  <a href="#help">❓ How To</a>
 </div></nav>
 
 <header class="hero" id="top">
@@ -226,6 +238,49 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
     <h2>📰 Latest News</h2>
     <p class="lead">Tap any card for the latest on teams, players and matches.</p>
     <div class="news" id="news"></div>
+  </section>
+
+  <section class="sec" id="winners">
+    <h2>🏆 World Cup Winners</h2>
+    <p class="lead">Every champion since 1930 — the host, who they beat in the final, and the score.</p>
+    <div id="winnersBox"></div>
+  </section>
+
+  <section class="sec" id="help">
+    <h2>❓ How To Use the App</h2>
+    <p class="lead">Everything you can do here, in plain English.</p>
+    <div class="helpwrap card" style="padding:14px 16px">
+      <div class="hq">📱 Getting in</div>
+      <p>Open the app on any phone or computer — nothing to install, no password. Tip: add it to your phone's home screen for one-tap access.</p>
+
+      <div class="hq">✍️ Make Your Picks</div>
+      <p>Tap <b>Make Your Picks</b> at the top, choose your name, and use the <b>+</b> / <b>−</b> buttons to set the score you think each game will end. Hit <b>Submit ✅</b> — done.</p>
+      <p>Changed your mind? Open it again, adjust, and Submit — your newest version always counts. When a game kicks off, that pick <b>locks</b> automatically.</p>
+      <div class="helptip">⭐ You don't have to pick every game — pick as many or as few as you like.</div>
+
+      <div class="hq">🏆 The Leaderboard</div>
+      <p>Scoring: <b>3 points</b> for the right result (win, lose or draw), and <b>8 points</b> for nailing the exact score. Most points wins!</p>
+
+      <div class="hq">📅 Today's Games</div>
+      <p>See today's matches with kickoff times in your local time, plus who's already picked and who still needs to.</p>
+
+      <div class="hq">🤝 The Pick-Off <span style="color:var(--gold2)">⭐ family favorite</span></div>
+      <p>The second a game kicks off, everyone's predictions for it are revealed side by side — and after the final whistle you'll see who nailed it. Sealed until kickoff so nobody can peek! Check it during games for instant bragging rights.</p>
+
+      <div class="hq">📈 Win Odds <span style="color:var(--gold2)">⭐ handy</span></div>
+      <p>Every upcoming game shows a colored bar with each team's chance to win, draw or lose — a great hint when you're deciding your score.</p>
+
+      <div class="hq">📊 Group Standings</div>
+      <p>Live tables for all 12 groups, updating as results come in, showing who's on track to reach the next round.</p>
+
+      <div class="hq">🖼️ Fan Cam &amp; your bobblehead</div>
+      <p>Check out the family bobbleheads in the Fan Cam — and your own shows up next to your name on the leaderboard.</p>
+
+      <div class="hq">⏰ Countdown</div>
+      <p>The top of the home page counts down to the next kickoff, so you always know how long you've got to lock in your picks.</p>
+
+      <div class="helptip">💡 Quick routine: pop into the app before each game day, set your scores, hit Submit, and check the Pick-Off once games start. That's all there is to it! 🏆</div>
+    </div>
   </section>
 </div>
 
@@ -554,6 +609,43 @@ document.getElementById('facts').innerHTML = FACTS.map(f=>
 document.getElementById('news').innerHTML = NEWS.map(n=>
   '<a class="na" href="'+n.u+'" target="_blank" rel="noopener"><div class="src">'+n.s+'</div><div class="ti">'+n.t+'</div><div class="d">'+n.d+'</div><div class="go">Read →</div></a>'
 ).join('');
+
+const WINNERS = [
+  {y:1930,host:"Uruguay",w:"Uruguay",c:"uy",ru:"Argentina",s:"4–2"},
+  {y:1934,host:"Italy",w:"Italy",c:"it",ru:"Czechoslovakia",s:"2–1 (a.e.t.)"},
+  {y:1938,host:"France",w:"Italy",c:"it",ru:"Hungary",s:"4–2"},
+  {y:1950,host:"Brazil",w:"Uruguay",c:"uy",ru:"Brazil",s:"2–1 *"},
+  {y:1954,host:"Switzerland",w:"West Germany",c:"de",ru:"Hungary",s:"3–2"},
+  {y:1958,host:"Sweden",w:"Brazil",c:"br",ru:"Sweden",s:"5–2"},
+  {y:1962,host:"Chile",w:"Brazil",c:"br",ru:"Czechoslovakia",s:"3–1"},
+  {y:1966,host:"England",w:"England",c:"gb-eng",ru:"West Germany",s:"4–2 (a.e.t.)"},
+  {y:1970,host:"Mexico",w:"Brazil",c:"br",ru:"Italy",s:"4–1"},
+  {y:1974,host:"West Germany",w:"West Germany",c:"de",ru:"Netherlands",s:"2–1"},
+  {y:1978,host:"Argentina",w:"Argentina",c:"ar",ru:"Netherlands",s:"3–1 (a.e.t.)"},
+  {y:1982,host:"Spain",w:"Italy",c:"it",ru:"West Germany",s:"3–1"},
+  {y:1986,host:"Mexico",w:"Argentina",c:"ar",ru:"West Germany",s:"3–2"},
+  {y:1990,host:"Italy",w:"West Germany",c:"de",ru:"Argentina",s:"1–0"},
+  {y:1994,host:"USA",w:"Brazil",c:"br",ru:"Italy",s:"0–0 (3–2 pens)"},
+  {y:1998,host:"France",w:"France",c:"fr",ru:"Brazil",s:"3–0"},
+  {y:2002,host:"South Korea & Japan",w:"Brazil",c:"br",ru:"Germany",s:"2–0"},
+  {y:2006,host:"Germany",w:"Italy",c:"it",ru:"France",s:"1–1 (5–3 pens)"},
+  {y:2010,host:"South Africa",w:"Spain",c:"es",ru:"Netherlands",s:"1–0 (a.e.t.)"},
+  {y:2014,host:"Brazil",w:"Germany",c:"de",ru:"Argentina",s:"1–0 (a.e.t.)"},
+  {y:2018,host:"Russia",w:"France",c:"fr",ru:"Croatia",s:"4–2"},
+  {y:2022,host:"Qatar",w:"Argentina",c:"ar",ru:"France",s:"3–3 (4–2 pens)"}
+];
+function renderWinners(){
+  const rows = WINNERS.map(function(x){
+    return '<tr><td class="yr">'+x.y+'</td><td>'+x.host+'</td>'+
+      '<td class="win"><img class="flg" src="https://flagcdn.com/h20/'+x.c+'.png" srcset="https://flagcdn.com/h40/'+x.c+'.png 2x" alt="" loading="lazy"> '+x.w+'</td>'+
+      '<td>def. '+x.ru+' <b>'+x.s+'</b></td></tr>';
+  }).join('');
+  document.getElementById('winnersBox').innerHTML =
+    '<div class="card" style="overflow-x:auto"><table class="wtbl">'+
+    '<tr><th>Year</th><th>Host</th><th>Champion</th><th>Final</th></tr>'+rows+'</table></div>'+
+    '<div class="note">🏆 Most titles: Brazil 5 · Germany &amp; Italy 4 each · Argentina 3 · Uruguay &amp; France 2 each. &nbsp;<b>a.e.t.</b> = after extra time. &nbsp;* 1950 was decided by a final group; shown is the deciding match.</div>';
+}
+renderWinners();
 
 const secs=[...document.querySelectorAll('.sec, #top')];
 const navlinks=[...document.querySelectorAll('#nav a')];
