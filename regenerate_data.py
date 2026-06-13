@@ -39,6 +39,16 @@ def main():
         except Exception:
             rstore = {}
 
+    # Family-submitted picks (from the Google Sheet via fetch_picks.py) override the
+    # spreadsheet's pick cells per player+match.
+    pjson = {}
+    ppath = os.path.join(HERE, "picks.json")
+    if os.path.exists(ppath):
+        try:
+            pjson = json.load(open(ppath, encoding="utf-8")) or {}
+        except Exception:
+            pjson = {}
+
     results = {}
     for r in range(4, 108):
         n = r - 3
@@ -60,10 +70,16 @@ def main():
     standings = []
     for name, hc, ac in PCOLS:
         picks, mp, ex, cor = [], 0, 0, 0
+        pj = pjson.get(name, {})
         for r in range(4, 108):
-            ph, pa = ws[hc+str(r)].value, ws[ac+str(r)].value
+            n = r-3
+            ov = pj.get(str(n))
+            if ov:
+                ph, pa = ov[0], ov[1]
+            else:
+                ph, pa = ws[hc+str(r)].value, ws[ac+str(r)].value
             if ph is None and pa is None: continue
-            n = r-3; ah, aa = mres[n]; p = pts(ph, pa, ah, aa)
+            ah, aa = mres[n]; p = pts(ph, pa, ah, aa)
             picks.append({"n": n, "ph": ph, "pa": pa, "pts": p})
             if p is not None:
                 mp += p

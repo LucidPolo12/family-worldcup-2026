@@ -3,7 +3,9 @@ name: Daily World Cup update
 # Runs every morning ~8am Central, plus a manual "Run workflow" button.
 on:
   schedule:
-    - cron: "0 13 * * *"   # 13:00 UTC ≈ 8:00 AM CT (after late games finish)
+    - cron: "0 13 * * *"   # ~8:00 AM CT — score yesterday's games
+    - cron: "0 18 * * *"   # ~1:00 PM CT — pull picks before afternoon kickoffs
+    - cron: "0 23 * * *"   # ~6:00 PM CT — pull picks before evening kickoffs
   workflow_dispatch: {}
 
 permissions:
@@ -21,6 +23,11 @@ jobs:
 
       - name: Install dependencies
         run: pip install openpyxl
+
+      - name: Ingest family-submitted picks
+        env:
+          PICKS_CSV_URL: ${{ secrets.PICKS_CSV_URL }}
+        run: python fetch_picks.py || echo "picks ingest skipped this run"
 
       - name: Enter finished group-stage scores
         env:
@@ -41,6 +48,7 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add data.json
           [ -f results.json ] && git add results.json || true
+          [ -f picks.json ] && git add picks.json || true
           if git diff --staged --quiet; then
             echo "No changes today."
           else
