@@ -519,30 +519,70 @@ function renderGroups(){
 }
 renderGroups();
 
+// ---- Live in-play scores (free ESPN scoreboard feed, client-side) ----
+let LIVE = {};   // match number -> {h, a, state:'in'|'post'|'pre', clock}
+const ELIAS = {"United States":"USA","Korea Republic":"South Korea","Turkey":"Türkiye",
+  "Czech Republic":"Czechia","Côte d'Ivoire":"Ivory Coast","IR Iran":"Iran",
+  "Bosnia & Herzegovina":"Bosnia and Herzegovina","Cabo Verde":"Cape Verde",
+  "Curacao":"Curaçao","Congo DR":"DR Congo"};
+const enorm = s => { s=(s||'').trim(); return ELIAS[s]||s; };
+let MATCH_BY_PAIR = null;
+function fetchLive(){
+  fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard',{cache:'no-store'})
+    .then(r=>r.ok?r.json():null).then(d=>{
+      if(!d||!d.events) return;
+      if(!MATCH_BY_PAIR){ MATCH_BY_PAIR={}; DATA.matches.forEach(m=>{ MATCH_BY_PAIR[m.h+'|'+m.a]=m.n; }); }
+      const next={};
+      d.events.forEach(ev=>{ try{
+        const cs=ev.competitions[0].competitors;
+        const H=cs.find(c=>c.homeAway==='home'), A=cs.find(c=>c.homeAway==='away');
+        const n=MATCH_BY_PAIR[enorm(H.team.displayName)+'|'+enorm(A.team.displayName)];
+        if(!n) return;
+        const st=(ev.status&&ev.status.type)?ev.status.type.state:'';
+        next[n]={h:parseInt(H.score,10), a:parseInt(A.score,10), state:st,
+                 clock:(ev.status&&ev.status.displayClock)||''};
+      }catch(e){} });
+      LIVE=next; renderPickoff();
+    }).catch(()=>{});
+}
+function provPts(ph,pa,ah,aa){ if(ph==null||pa==null||ah==null||aa==null) return 0;
+  if(ph===ah&&pa===aa) return 8; const s=(x,y)=>(x>y)-(x<y); return s(ph,pa)===s(ah,aa)?3:0; }
+
 function renderPickoff(){
   const now=Date.now();
   const started = DATA.matches.filter(m=>matchStart(m)<=now && m.h!=='TBD').sort((a,b)=>matchStart(b)-matchStart(a)).slice(0,24);
   const box=document.getElementById('pickoffBox');
   if(!started.length){ box.innerHTML='<div class="note">⏳ No games have kicked off yet — every prediction stays sealed until its match starts.</div>'; return; }
-  box.innerHTML = started.map(m=>{
+  box.innerHTML = started.map(function(m){
     const done=m.ah!=null;
-    let picks=DATA.standings.map(p=>{const pk=p.picks.find(k=>k.n===m.n); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts}:null;}).filter(Boolean);
-    picks.sort(done? (a,b)=>((b.pts||0)-(a.pts||0))||a.name.localeCompare(b.name) : (a,b)=>a.name.localeCompare(b.name));
-    const stat = done? '<span class="postat ft">FULL TIME</span>' : '<span class="postat live">🔴 IN PLAY</span>';
-    const score = done? (m.ah+'–'+m.aa) : 'vs';
-    const rows = picks.length ? picks.map(p=>{
-      const badge = !done? '·' : (p.pts===8?'🔥 8':(p.pts===3?'✅ 3':'0'));
-      return '<div class="porow '+(done&&p.pts>0?'win':'')+'">'+
-        '<div class="pn">'+pavatar(p.name,24)+p.name+'</div>'+
-        '<div class="pp">'+p.ph+'–'+p.pa+'</div>'+
-        '<div class="pb">'+badge+'</div></div>';
+    const lv=LIVE[m.n];
+    const hasLive = !done && lv && (lv.state==='in'||lv.state==='post') && lv.h!=null && !isNaN(lv.h);
+    let sh, sa, scoreHtml, statHtml, scored;
+    if(done){ sh=m.ah; sa=m.aa; scoreHtml=m.ah+'–'+m.aa; statHtml='<span class="postat ft">FULL TIME</span>'; scored=true; }
+    else if(hasLive){ sh=lv.h; sa=lv.a; scoreHtml=lv.h+'–'+lv.a; scored=true;
+      statHtml = lv.state==='post' ? '<span class="postat ft">FULL TIME</span>'
+               : '<span class="postat live">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'; }
+    else { scoreHtml='vs'; statHtml='<span class="postat live">🔴 IN PLAY</span>'; scored=false; }
+    const liveScored = hasLive && lv.state!=='post';
+    let picks=DATA.standings.map(function(p){const pk=p.picks.find(function(k){return k.n===m.n;}); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts}:null;}).filter(Boolean);
+    const ptOf = function(p){ return done ? (p.pts||0) : (scored ? provPts(p.ph,p.pa,sh,sa) : -1); };
+    if(scored) picks.sort(function(a,b){ return (ptOf(b)-ptOf(a))||a.name.localeCompare(b.name); });
+    else picks.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    const rows = picks.length ? picks.map(function(p){
+      let badge='·', win='';
+      if(scored){ const pp=ptOf(p); badge=(pp===8?'🔥 8':(pp===3?'✅ 3':'0'))+(done?'':'*'); win=pp>0?'win':''; }
+      return '<div class="porow '+win+'"><div class="pn">'+pavatar(p.name,24)+p.name+'</div>'+
+        '<div class="pp">'+p.ph+'–'+p.pa+'</div><div class="pb">'+badge+'</div></div>';
     }).join('') : '<div class="porow"><div class="pn" style="color:var(--muted);font-weight:600">No one predicted this one 🤷</div><div></div><div></div></div>';
-    let exactLine='';
-    if(done){ const ex=picks.filter(p=>p.pts===8).map(p=>p.name); if(ex.length) exactLine='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
-    return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+score+'</span>'+m.a+' '+flag(m.a)+'</div>'+stat+'</div>'+rows+exactLine+'</div>';
+    let foot='';
+    if(done){ const ex=picks.filter(function(p){return p.pts===8;}).map(function(p){return p.name;}); if(ex.length) foot='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
+    else if(liveScored){ foot='<div class="poexact">🔴 Live points — they update as the score changes and lock at full time. (* = provisional)</div>'; }
+    return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+scoreHtml+'</span>'+m.a+' '+flag(m.a)+'</div>'+statHtml+'</div>'+rows+foot+'</div>';
   }).join('');
 }
 renderPickoff();
+fetchLive();
+setInterval(fetchLive, 45000);
 function mByN(n){ return DATA.matches.find(m=>m.n===n); }
 function openPlayer(name){
   const x = DATA.standings.find(p=>p.name===name);
