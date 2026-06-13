@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family World Cup 2026 — Hub</title>
+<style>
+:root{--g1:#0a7d3c;--g2:#0c5e2f;--gold:#ffcf33;--gold2:#f4a900;--ink:#13261b;--bg:#f3f7f4;--card:#fff;--line:#e2eae4;--muted:#6a7a70}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:inherit}
+.flg{height:13px;width:auto;border-radius:2px;vertical-align:-1px;margin-right:3px;box-shadow:0 0 0 .5px rgba(0,0,0,.15)}
+.topnav{position:sticky;top:0;z-index:40;background:linear-gradient(90deg,#0a7d3c,#0c5e2f);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.topnav .row{max-width:980px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;padding:10px 10px;-webkit-overflow-scrolling:touch}
+.topnav a{flex:0 0 auto;color:#eafff1;text-decoration:none;font-weight:700;font-size:13.5px;padding:7px 12px;border-radius:999px;white-space:nowrap;opacity:.92}
+.topnav a:active,.topnav a.on{background:rgba(255,255,255,.18);opacity:1}
+.hero{background:radial-gradient(1200px 400px at 50% -120px,#13a352,transparent),linear-gradient(160deg,#0a7d3c,#063f20);color:#fff;text-align:center;padding:34px 16px 30px;position:relative;overflow:hidden}
+.hero .ball{position:absolute;opacity:.10;font-size:150px;top:-30px;right:-20px;transform:rotate(12deg)}
+.hero .ball2{position:absolute;opacity:.08;font-size:120px;bottom:-30px;left:-15px}
+.hero h1{margin:0 0 4px;font-size:30px;font-weight:900;letter-spacing:.4px;text-shadow:0 2px 0 rgba(0,0,0,.18)}
+.hero .sub{font-size:14px;opacity:.95;max-width:560px;margin:0 auto 16px}
+.cd{display:inline-flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.cd .b{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:8px 12px;min-width:64px}
+.cd .n{font-size:24px;font-weight:900;line-height:1}
+.cd .l{font-size:10px;letter-spacing:1px;text-transform:uppercase;opacity:.85;margin-top:3px}
+.cd .next{font-size:12.5px;opacity:.95;margin-top:10px;width:100%}
+.cta{display:inline-block;margin-top:16px;background:linear-gradient(180deg,var(--gold),var(--gold2));color:#3a2a00;font-weight:900;text-decoration:none;padding:13px 22px;border-radius:14px;font-size:16px;box-shadow:0 6px 16px rgba(244,169,0,.4)}
+.wrap{max-width:980px;margin:0 auto;padding:18px 14px}
+.sec{margin:26px 0}
+.sec h2{font-size:20px;font-weight:900;margin:0 0 4px;display:flex;align-items:center;gap:9px}
+.sec .lead{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.lb{overflow:hidden}
+.lbrow{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.lbrow:last-child{border-bottom:none}
+.lbrow .rk{font-weight:900;font-size:17px;color:var(--muted);text-align:center}
+.lbrow.r1 .rk{color:var(--gold2)} .lbrow.r1{background:linear-gradient(90deg,#fff9e6,#fff)}
+.lbrow .nm{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lbrow .meta{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.lbrow .tot{font-weight:900;font-size:20px;color:var(--g1)}
+.lbrow .tot small{font-size:11px;color:var(--muted);font-weight:700;display:block;text-align:right}
+.chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:#eef6f0;color:var(--g2);border:1px solid #d9ece0}
+.chip.alive{background:#e9f9ee;color:#0a7d3c;border-color:#bce8cc}
+.note{font-size:12.5px;color:var(--muted);background:#fffbe9;border:1px solid #f3e6b0;border-radius:12px;padding:10px 12px;margin-top:12px}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px}
+.badge{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.badge .ic{font-size:26px} .badge .ti{font-weight:900;font-size:13px;margin-top:4px} .badge .who{font-size:12px;color:var(--muted);margin-top:2px}
+.players{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pl{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;transition:.15s}
+.pl:active{transform:scale(.98)}
+.pl .h{display:flex;justify-content:space-between;align-items:center}
+.pl .nm{font-weight:900;font-size:15px} .pl .pt{font-weight:900;color:var(--g1)}
+.pl .sm{font-size:11.5px;color:var(--muted);margin-top:4px}
+.pl .ch{font-size:12px;margin-top:6px}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fact{background:linear-gradient(160deg,#fff,#f3faf5);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.fact .e{font-size:24px}.fact .big{font-size:26px;font-weight:900;color:var(--g1);margin-top:4px}
+.fact .t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.fact .d{font-size:12px;color:var(--ink);margin-top:6px;line-height:1.35}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px}
+.chips .c{flex:0 0 auto;padding:7px 13px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:700;white-space:nowrap}
+.chips .c.on{background:var(--g1);border-color:var(--g1);color:#fff}
+.match{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.match:last-child{border-bottom:none}
+.match .tm{font-weight:700;font-size:14px}.match .tm.a{text-align:right}
+.match .sc{text-align:center;min-width:64px}
+.match .sc .v{font-weight:900;font-size:18px}.match .sc .v.tbd{color:#c4cdc7;font-size:14px}
+.match .mt{grid-column:1/-1;font-size:11px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between}
+.knk .mt span:first-child{color:#b06a00}
+.news{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.na{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;transition:.15s}
+.na:active{transform:scale(.99)}
+.na .src{font-size:11px;font-weight:800;color:var(--gold2);text-transform:uppercase;letter-spacing:.5px}
+.na .ti{font-weight:800;font-size:14.5px;margin:5px 0 4px;line-height:1.3}
+.na .d{font-size:12.5px;color:var(--muted);line-height:1.4}
+.na .go{font-size:12px;color:var(--g1);font-weight:800;margin-top:8px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:28px 16px 40px}
+.modal{position:fixed;inset:0;background:rgba(10,20,14,.55);display:none;align-items:flex-end;z-index:60}
+.modal.show{display:flex}
+.sheet{background:#fff;width:100%;max-width:560px;margin:0 auto;border-radius:18px 18px 0 0;padding:16px 16px 28px;max-height:82vh;overflow:auto}
+.sheet h3{margin:0 0 2px;font-size:18px}.sheet .sm{color:var(--muted);font-size:13px;margin-bottom:10px}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.prow .pp{font-weight:800}
+.prow .pz{font-weight:900}
+.closeb{display:block;width:100%;margin-top:14px;padding:13px;border:none;border-radius:12px;background:var(--g1);color:#fff;font-weight:800;font-size:15px}
+.glegend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin:0 0 14px;font-weight:600;align-items:center}
+.glegend span{display:inline-flex;align-items:center;gap:5px}
+.gdot{width:11px;height:11px;border-radius:3px;display:inline-block}
+.gwrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.gcard h3{margin:0;font-size:14px;font-weight:900;padding:10px 12px;background:linear-gradient(90deg,#f3faf5,#fff);border-bottom:1px solid var(--line)}
+table.gt{width:100%;border-collapse:collapse;font-size:12px}
+.gt th{font-size:9.5px;letter-spacing:.3px;color:var(--muted);font-weight:800;text-align:center;padding:6px 2px;border-bottom:1px solid var(--line)}
+.gt th.tl{text-align:left;padding-left:10px}
+.gt td{text-align:center;padding:7px 2px;border-bottom:1px solid var(--line)}
+.gt tr:last-child td{border-bottom:none}
+.gt td.tl{text-align:left;padding-left:8px;font-weight:700;white-space:nowrap}
+.gt td.pts{font-weight:900;color:var(--ink)}
+.gt .pos{font-weight:800;color:var(--muted)}
+.gt tr.q1{background:#eafaf0}.gt tr.q1 .pos{color:#0a7d3c}
+.gt tr.q3{background:#fff7e6}.gt tr.q3 .pos{color:#b06a00}
+.pocard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.pohead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;background:linear-gradient(90deg,#f3faf5,#fff);border-bottom:1px solid var(--line)}
+.pohead .mt{font-weight:800;font-size:13.5px}
+.pohead .sc{font-weight:900;font-size:14px;color:var(--g1);margin:0 3px}
+.postat{font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.postat.ft{background:#eef6f0;color:var(--g2);border:1px solid #d9ece0}
+.postat.live{background:#fdeaea;color:#c0392b;border:1px solid #f3c6c6}
+.porow{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--line)}
+.porow:last-child{border-bottom:none}
+.porow .pn{display:flex;align-items:center;font-weight:700;font-size:13.5px}
+.porow .pp{font-weight:800;font-size:13.5px}
+.porow .pb{font-size:12px;font-weight:800;min-width:30px;text-align:right}
+.porow.win{background:#eafaf0}
+.poexact{font-size:12px;color:var(--g2);font-weight:700;padding:8px 13px;background:#f6fbf7}
+</style>
+</head>
+<body>
+<nav class="topnav"><div class="row" id="nav">
+  <a href="#top">🏠 Home</a>
+  <a href="#standings">🏆 Standings</a>
+  <a href="#today">📅 Today</a>
+  <a href="#badges">🎖️ Badges</a>
+  <a href="#players">👥 Our Picks</a>
+  <a href="#fancam">🎽 Fan Cam</a>
+  <a href="#matches">⚽ Matches</a>
+  <a href="#pickoff">🤝 Pick-Off</a>
+  <a href="#groups">📊 Group Tables</a>
+  <a href="#bracket">🌐 Bracket</a>
+  <a href="#facts">💡 Fun Facts</a>
+  <a href="#news">📰 News</a>
+</div></nav>
+
+<header class="hero" id="top">
+  <div class="ball">⚽</div><div class="ball2">🏆</div>
+  <h1>Family World Cup 2026</h1>
+  <div class="sub">Our family’s home for the biggest World Cup ever — standings, picks, fun facts and all the action across USA · Canada · Mexico</div>
+  <div class="cd" id="cd">
+    <div class="b"><div class="n" id="cdd">--</div><div class="l">days</div></div>
+    <div class="b"><div class="n" id="cdh">--</div><div class="l">hrs</div></div>
+    <div class="b"><div class="n" id="cdm">--</div><div class="l">min</div></div>
+    <div class="cd next" id="cdnext"></div>
+  </div>
+  <div><a class="cta" href="WorldCupPicks.html" target="_blank" rel="noopener">⚽ Make Your Picks →</a></div>
+</header>
+
+<div class="wrap">
+  <section class="sec" id="standings">
+    <h2>🏆 Leaderboard</h2>
+    <p class="lead">Match points update as results come in. Pre-tournament picks (champion, runner-up, semis) score after the tournament ends.</p>
+    <div class="card lb" id="lb"></div>
+    <div class="note" id="standNote"></div>
+  </section>
+
+  <section class="sec" id="today">
+    <h2>📅 Today's Games</h2>
+    <p class="lead" id="todayLead"></p>
+    <div class="card" id="todayList" style="margin-bottom:12px"></div>
+    <div class="card lb" id="readyList"></div>
+    <div class="note" id="readyNote"></div>
+  </section>
+
+  <section class="sec" id="badges">
+    <h2>🎖️ Family Badges</h2>
+    <p class="lead">Bragging rights, automatically tracked.</p>
+    <div class="badges" id="badges"></div>
+  </section>
+
+  <section class="sec" id="players">
+    <h2>👥 Our Picks</h2>
+    <p class="lead">Tap a family member to see how their predictions are doing.</p>
+    <div class="players" id="players"></div>
+  </section>
+
+  <section class="sec" id="fancam">
+    <h2>🎽 Family Fan Cam</h2>
+    <p class="lead">Show your colors! Our family decked out for the big tournament.</p>
+    <div class="players" id="fancamGrid"></div>
+  </section>
+
+  <section class="sec" id="matches">
+    <h2>⚽ Match Center</h2>
+    <p class="lead">Every fixture, kickoff times in ET. Scores appear once games finish.</p>
+    <div class="chips" id="dateChips"></div>
+    <div class="card" id="matchList"></div>
+  </section>
+
+  <section class="sec" id="pickoff">
+    <h2>🤝 The Pick-Off</h2>
+    <p class="lead">The moment a game kicks off, everyone's predictions for it are revealed — and after full time you'll see who nailed it. Sealed until kickoff so nobody can peek! 🤫</p>
+    <div id="pickoffBox"></div>
+  </section>
+
+  <section class="sec" id="groups">
+    <h2>📊 Group Standings</h2>
+    <p class="lead">Live group tables — they update automatically as results are entered. Top 2 in each group qualify for the Round of 32, plus the 8 best 3rd-place teams.</p>
+    <div class="glegend">
+      <span><i class="gdot" style="background:#1aa75a"></i> Top 2 — qualify</span>
+      <span><i class="gdot" style="background:#f4a900"></i> 3rd — in the hunt</span>
+      <span>MP=played · GD=goal diff · PTS=points</span>
+    </div>
+    <div class="gwrap" id="groupsWrap"></div>
+    <h3 style="font-size:16px;font-weight:900;margin:24px 0 4px">🥉 Best Third-Place Race</h3>
+    <p class="lead" style="margin-bottom:10px">The top 8 of the twelve 3rd-place teams grab the final knockout spots.</p>
+    <div id="thirdsBox"></div>
+  </section>
+
+  <section class="sec" id="bracket">
+    <h2>🌐 Knockout Bracket</h2>
+    <p class="lead">The Round of 32 begins June 28. Team names fill in as groups are decided.</p>
+    <div class="card" id="bracket"></div>
+  </section>
+
+  <section class="sec" id="facts">
+    <h2>💡 World Cup Fun Facts</h2>
+    <p class="lead">The 2026 tournament is breaking records left and right.</p>
+    <div class="facts" id="facts"></div>
+  </section>
+
+  <section class="sec" id="news">
+    <h2>📰 Latest News</h2>
+    <p class="lead">Tap any card for the latest on teams, players and matches.</p>
+    <div class="news" id="news"></div>
+  </section>
+</div>
+
+<footer>Made with ❤️ for the family · Family World Cup Challenge 2026 · Scores &amp; standings refresh through the tournament.</footer>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+const DATA = {"players": ["Ewan", "Nana", "Emrys", "Nonno", "Nonna", "Boompa", "Xavier", "Autumn", "River"], "standings": [{"name": "Ewan", "matchPts": 11, "exact": 1, "correct": 2, "champ": "Spain", "photo": null, "picks": [{"n": 1, "ph": 3, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 2, "pa": 1, "pts": null}, {"n": 4, "ph": 2, "pa": 0, "pts": null}]}, {"name": "Nana", "matchPts": 3, "exact": 0, "correct": 1, "champ": "France", "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": null}, {"n": 4, "ph": 2, "pa": 0, "pts": null}]}, {"name": "Emrys", "matchPts": 6, "exact": 0, "correct": 2, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 1, "pa": 0, "pts": 3}, {"n": 2, "ph": 3, "pa": 1, "pts": 3}]}, {"name": "Nonno", "matchPts": 3, "exact": 0, "correct": 1, "champ": "Brazil", "photo": "nonno-bobblehead.jpg", "picks": [{"n": 1, "ph": 3, "pa": 0, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": null}, {"n": 4, "ph": 3, "pa": 1, "pts": null}, {"n": 5, "ph": 0, "pa": 4, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 4, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 7, "pa": 0, "pts": null}, {"n": 10, "ph": 2, "pa": 1, "pts": null}]}, {"name": "Nonna", "matchPts": 8, "exact": 1, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 2, "ph": 2, "pa": 1, "pts": 8}]}, {"name": "Boompa", "matchPts": 0, "exact": 0, "correct": 0, "champ": "France", "photo": null, "picks": [{"n": 1, "ph": 0, "pa": 1, "pts": 0}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}]}, {"name": "Xavier", "matchPts": 16, "exact": 2, "correct": 2, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}]}, {"name": "Autumn", "matchPts": 8, "exact": 1, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 1, "pa": 1, "pts": 0}, {"n": 3, "ph": 2, "pa": 0, "pts": null}, {"n": 4, "ph": 1, "pa": 1, "pts": null}]}, {"name": "River", "matchPts": 3, "exact": 0, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 0, "pts": null}, {"n": 4, "ph": 2, "pa": 1, "pts": null}]}], "matches": [{"n": 1, "date": "2026-06-11", "stage": "Group Stage", "grp": "A", "h": "Mexico", "a": "South Africa", "ah": 2, "aa": 0}, {"n": 2, "date": "2026-06-11", "stage": "Group Stage", "grp": "A", "h": "South Korea", "a": "Czechia", "ah": 2, "aa": 1}, {"n": 3, "date": "2026-06-12", "stage": "Group Stage", "grp": "B", "h": "Canada", "a": "Bosnia and Herzegovina", "ah": null, "aa": null}, {"n": 4, "date": "2026-06-12", "stage": "Group Stage", "grp": "D", "h": "USA", "a": "Paraguay", "ah": null, "aa": null}, {"n": 5, "date": "2026-06-13", "stage": "Group Stage", "grp": "B", "h": "Qatar", "a": "Switzerland", "ah": null, "aa": null}, {"n": 6, "date": "2026-06-13", "stage": "Group Stage", "grp": "C", "h": "Brazil", "a": "Morocco", "ah": null, "aa": null}, {"n": 7, "date": "2026-06-13", "stage": "Group Stage", "grp": "C", "h": "Haiti", "a": "Scotland", "ah": null, "aa": null}, {"n": 8, "date": "2026-06-13", "stage": "Group Stage", "grp": "D", "h": "Australia", "a": "Türkiye", "ah": null, "aa": null}, {"n": 9, "date": "2026-06-14", "stage": "Group Stage", "grp": "E", "h": "Germany", "a": "Curaçao", "ah": null, "aa": null}, {"n": 10, "date": "2026-06-14", "stage": "Group Stage", "grp": "F", "h": "Netherlands", "a": "Japan", "ah": null, "aa": null}, {"n": 11, "date": "2026-06-14", "stage": "Group Stage", "grp": "E", "h": "Ivory Coast", "a": "Ecuador", "ah": null, "aa": null}, {"n": 12, "date": "2026-06-14", "stage": "Group Stage", "grp": "F", "h": "Tunisia", "a": "Sweden", "ah": null, "aa": null}, {"n": 13, "date": "2026-06-15", "stage": "Group Stage", "grp": "H", "h": "Spain", "a": "Cape Verde", "ah": null, "aa": null}, {"n": 14, "date": "2026-06-15", "stage": "Group Stage", "grp": "G", "h": "Belgium", "a": "Egypt", "ah": null, "aa": null}, {"n": 15, "date": "2026-06-15", "stage": "Group Stage", "grp": "H", "h": "Saudi Arabia", "a": "Uruguay", "ah": null, "aa": null}, {"n": 16, "date": "2026-06-15", "stage": "Group Stage", "grp": "G", "h": "Iran", "a": "New Zealand", "ah": null, "aa": null}, {"n": 17, "date": "2026-06-16", "stage": "Group Stage", "grp": "I", "h": "France", "a": "Senegal", "ah": null, "aa": null}, {"n": 18, "date": "2026-06-16", "stage": "Group Stage", "grp": "I", "h": "Iraq", "a": "Norway", "ah": null, "aa": null}, {"n": 19, "date": "2026-06-16", "stage": "Group Stage", "grp": "J", "h": "Argentina", "a": "Algeria", "ah": null, "aa": null}, {"n": 20, "date": "2026-06-16", "stage": "Group Stage", "grp": "J", "h": "Austria", "a": "Jordan", "ah": null, "aa": null}, {"n": 21, "date": "2026-06-17", "stage": "Group Stage", "grp": "K", "h": "Portugal", "a": "DR Congo", "ah": null, "aa": null}, {"n": 22, "date": "2026-06-17", "stage": "Group Stage", "grp": "L", "h": "England", "a": "Croatia", "ah": null, "aa": null}, {"n": 23, "date": "2026-06-17", "stage": "Group Stage", "grp": "L", "h": "Ghana", "a": "Panama", "ah": null, "aa": null}, {"n": 24, "date": "2026-06-17", "stage": "Group Stage", "grp": "K", "h": "Uzbekistan", "a": "Colombia", "ah": null, "aa": null}, {"n": 25, "date": "2026-06-18", "stage": "Group Stage", "grp": "A", "h": "Czechia", "a": "South Africa", "ah": null, "aa": null}, {"n": 26, "date": "2026-06-18", "stage": "Group Stage", "grp": "B", "h": "Switzerland", "a": "Bosnia and Herzegovina", "ah": null, "aa": null}, {"n": 27, "date": "2026-06-18", "stage": "Group Stage", "grp": "B", "h": "Canada", "a": "Qatar", "ah": null, "aa": null}, {"n": 28, "date": "2026-06-18", "stage": "Group Stage", "grp": "A", "h": "Mexico", "a": "South Korea", "ah": null, "aa": null}, {"n": 29, "date": "2026-06-19", "stage": "Group Stage", "grp": "D", "h": "USA", "a": "Australia", "ah": null, "aa": null}, {"n": 30, "date": "2026-06-19", "stage": "Group Stage", "grp": "C", "h": "Scotland", "a": "Morocco", "ah": null, "aa": null}, {"n": 31, "date": "2026-06-19", "stage": "Group Stage", "grp": "C", "h": "Brazil", "a": "Haiti", "ah": null, "aa": null}, {"n": 32, "date": "2026-06-19", "stage": "Group Stage", "grp": "D", "h": "Türkiye", "a": "Paraguay", "ah": null, "aa": null}, {"n": 33, "date": "2026-06-20", "stage": "Group Stage", "grp": "F", "h": "Netherlands", "a": "Sweden", "ah": null, "aa": null}, {"n": 34, "date": "2026-06-20", "stage": "Group Stage", "grp": "E", "h": "Germany", "a": "Ivory Coast", "ah": null, "aa": null}, {"n": 35, "date": "2026-06-20", "stage": "Group Stage", "grp": "E", "h": "Ecuador", "a": "Curaçao", "ah": null, "aa": null}, {"n": 36, "date": "2026-06-20", "stage": "Group Stage", "grp": "F", "h": "Tunisia", "a": "Japan", "ah": null, "aa": null}, {"n": 37, "date": "2026-06-21", "stage": "Group Stage", "grp": "H", "h": "Spain", "a": "Saudi Arabia", "ah": null, "aa": null}, {"n": 38, "date": "2026-06-21", "stage": "Group Stage", "grp": "G", "h": "Belgium", "a": "Iran", "ah": null, "aa": null}, {"n": 39, "date": "2026-06-21", "stage": "Group Stage", "grp": "H", "h": "Uruguay", "a": "Cape Verde", "ah": null, "aa": null}, {"n": 40, "date": "2026-06-21", "stage": "Group Stage", "grp": "G", "h": "New Zealand", "a": "Egypt", "ah": null, "aa": null}, {"n": 41, "date": "2026-06-22", "stage": "Group Stage", "grp": "J", "h": "Argentina", "a": "Austria", "ah": null, "aa": null}, {"n": 42, "date": "2026-06-22", "stage": "Group Stage", "grp": "I", "h": "France", "a": "Iraq", "ah": null, "aa": null}, {"n": 43, "date": "2026-06-22", "stage": "Group Stage", "grp": "I", "h": "Norway", "a": "Senegal", "ah": null, "aa": null}, {"n": 44, "date": "2026-06-22", "stage": "Group Stage", "grp": "J", "h": "Jordan", "a": "Algeria", "ah": null, "aa": null}, {"n": 45, "date": "2026-06-23", "stage": "Group Stage", "grp": "K", "h": "Portugal", "a": "Uzbekistan", "ah": null, "aa": null}, {"n": 46, "date": "2026-06-23", "stage": "Group Stage", "grp": "L", "h": "England", "a": "Ghana", "ah": null, "aa": null}, {"n": 47, "date": "2026-06-23", "stage": "Group Stage", "grp": "L", "h": "Panama", "a": "Croatia", "ah": null, "aa": null}, {"n": 48, "date": "2026-06-23", "stage": "Group Stage", "grp": "K", "h": "Colombia", "a": "DR Congo", "ah": null, "aa": null}, {"n": 49, "date": "2026-06-24", "stage": "Group Stage", "grp": "B", "h": "Switzerland", "a": "Canada", "ah": null, "aa": null}, {"n": 50, "date": "2026-06-24", "stage": "Group Stage", "grp": "B", "h": "Bosnia and Herzegovina", "a": "Qatar", "ah": null, "aa": null}, {"n": 51, "date": "2026-06-24", "stage": "Group Stage", "grp": "C", "h": "Brazil", "a": "Scotland", "ah": null, "aa": null}, {"n": 52, "date": "2026-06-24", "stage": "Group Stage", "grp": "C", "h": "Morocco", "a": "Haiti", "ah": null, "aa": null}, {"n": 53, "date": "2026-06-24", "stage": "Group Stage", "grp": "A", "h": "Mexico", "a": "Czechia", "ah": null, "aa": null}, {"n": 54, "date": "2026-06-24", "stage": "Group Stage", "grp": "A", "h": "South Korea", "a": "South Africa", "ah": null, "aa": null}, {"n": 55, "date": "2026-06-25", "stage": "Group Stage", "grp": "E", "h": "Ecuador", "a": "Germany", "ah": null, "aa": null}, {"n": 56, "date": "2026-06-25", "stage": "Group Stage", "grp": "E", "h": "Curaçao", "a": "Ivory Coast", "ah": null, "aa": null}, {"n": 57, "date": "2026-06-25", "stage": "Group Stage", "grp": "F", "h": "Tunisia", "a": "Netherlands", "ah": null, "aa": null}, {"n": 58, "date": "2026-06-25", "stage": "Group Stage", "grp": "F", "h": "Japan", "a": "Sweden", "ah": null, "aa": null}, {"n": 59, "date": "2026-06-25", "stage": "Group Stage", "grp": "D", "h": "USA", "a": "Türkiye", "ah": null, "aa": null}, {"n": 60, "date": "2026-06-25", "stage": "Group Stage", "grp": "D", "h": "Paraguay", "a": "Australia", "ah": null, "aa": null}, {"n": 61, "date": "2026-06-26", "stage": "Group Stage", "grp": "I", "h": "Norway", "a": "France", "ah": null, "aa": null}, {"n": 62, "date": "2026-06-26", "stage": "Group Stage", "grp": "I", "h": "Senegal", "a": "Iraq", "ah": null, "aa": null}, {"n": 63, "date": "2026-06-26", "stage": "Group Stage", "grp": "H", "h": "Uruguay", "a": "Spain", "ah": null, "aa": null}, {"n": 64, "date": "2026-06-26", "stage": "Group Stage", "grp": "H", "h": "Cape Verde", "a": "Saudi Arabia", "ah": null, "aa": null}, {"n": 65, "date": "2026-06-26", "stage": "Group Stage", "grp": "G", "h": "New Zealand", "a": "Belgium", "ah": null, "aa": null}, {"n": 66, "date": "2026-06-26", "stage": "Group Stage", "grp": "G", "h": "Egypt", "a": "Iran", "ah": null, "aa": null}, {"n": 67, "date": "2026-06-27", "stage": "Group Stage", "grp": "L", "h": "Panama", "a": "England", "ah": null, "aa": null}, {"n": 68, "date": "2026-06-27", "stage": "Group Stage", "grp": "L", "h": "Croatia", "a": "Ghana", "ah": null, "aa": null}, {"n": 69, "date": "2026-06-27", "stage": "Group Stage", "grp": "K", "h": "Colombia", "a": "Portugal", "ah": null, "aa": null}, {"n": 70, "date": "2026-06-27", "stage": "Group Stage", "grp": "K", "h": "DR Congo", "a": "Uzbekistan", "ah": null, "aa": null}, {"n": 71, "date": "2026-06-27", "stage": "Group Stage", "grp": "J", "h": "Argentina", "a": "Jordan", "ah": null, "aa": null}, {"n": 72, "date": "2026-06-27", "stage": "Group Stage", "grp": "J", "h": "Algeria", "a": "Austria", "ah": null, "aa": null}, {"n": 73, "date": "2026-06-28", "stage": "Round of 32", "grp": null, "h": "Group A 2nd Place", "a": "Group B 2nd Place", "ah": null, "aa": null}, {"n": 74, "date": "2026-06-29", "stage": "Round of 32", "grp": null, "h": "Group C Winner", "a": "Group F 2nd Place", "ah": null, "aa": null}, {"n": 75, "date": "2026-06-29", "stage": "Round of 32", "grp": null, "h": "Group E Winner", "a": "Group A/B/C/D/F 3rd Place", "ah": null, "aa": null}, {"n": 76, "date": "2026-06-29", "stage": "Round of 32", "grp": null, "h": "Group F Winner", "a": "Group C 2nd Place", "ah": null, "aa": null}, {"n": 77, "date": "2026-06-30", "stage": "Round of 32", "grp": null, "h": "Group E 2nd Place", "a": "Group I 2nd Place", "ah": null, "aa": null}, {"n": 78, "date": "2026-06-30", "stage": "Round of 32", "grp": null, "h": "Group I Winner", "a": "Group C/D/F/G/H 3rd Place", "ah": null, "aa": null}, {"n": 79, "date": "2026-06-30", "stage": "Round of 32", "grp": null, "h": "Group A Winner", "a": "Group C/E/F/H/I 3rd Place", "ah": null, "aa": null}, {"n": 80, "date": "2026-07-01", "stage": "Round of 32", "grp": null, "h": "Group L Winner", "a": "Group E/H/I/J/K 3rd Place", "ah": null, "aa": null}, {"n": 81, "date": "2026-07-01", "stage": "Round of 32", "grp": null, "h": "Group G Winner", "a": "Group A/E/H/I/J 3rd Place", "ah": null, "aa": null}, {"n": 82, "date": "2026-07-01", "stage": "Round of 32", "grp": null, "h": "Group D Winner", "a": "Group B/E/F/I/J 3rd Place", "ah": null, "aa": null}, {"n": 83, "date": "2026-07-02", "stage": "Round of 32", "grp": null, "h": "Group H Winner", "a": "Group J 2nd Place", "ah": null, "aa": null}, {"n": 84, "date": "2026-07-02", "stage": "Round of 32", "grp": null, "h": "Group K 2nd Place", "a": "Group L 2nd Place", "ah": null, "aa": null}, {"n": 85, "date": "2026-07-02", "stage": "Round of 32", "grp": null, "h": "Group B Winner", "a": "Group D/E/I/J/L 3rd Place", "ah": null, "aa": null}, {"n": 86, "date": "2026-07-03", "stage": "Round of 32", "grp": null, "h": "Group D 2nd Place", "a": "Group G 2nd Place", "ah": null, "aa": null}, {"n": 87, "date": "2026-07-03", "stage": "Round of 32", "grp": null, "h": "Group J Winner", "a": "Group H 2nd Place", "ah": null, "aa": null}, {"n": 88, "date": "2026-07-03", "stage": "Round of 32", "grp": null, "h": "Group K Winner", "a": "Group D/E/I/J/L 3rd Place", "ah": null, "aa": null}, {"n": 89, "date": "2026-07-04", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 90, "date": "2026-07-04", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 91, "date": "2026-07-05", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 92, "date": "2026-07-05", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 93, "date": "2026-07-06", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 94, "date": "2026-07-06", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 95, "date": "2026-07-07", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 96, "date": "2026-07-07", "stage": "Round of 16", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 97, "date": "2026-07-09", "stage": "Quarterfinal", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 98, "date": "2026-07-10", "stage": "Quarterfinal", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 99, "date": "2026-07-11", "stage": "Quarterfinal", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 100, "date": "2026-07-11", "stage": "Quarterfinal", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 101, "date": "2026-07-14", "stage": "Semifinal", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 102, "date": "2026-07-15", "stage": "Semifinal", "grp": null, "h": "TBD", "a": "TBD", "ah": null, "aa": null}, {"n": 103, "date": "2026-07-18", "stage": "Third Place", "grp": null, "h": "Loser Match 101", "a": "Loser Match 102", "ah": null, "aa": null}, {"n": 104, "date": "2026-07-19", "stage": "Final", "grp": null, "h": "Winner Match 101", "a": "Winner Match 102", "ah": null, "aa": null}], "photos": {"Nonno": "nonno-bobblehead.jpg", "Emrys": "emrys-bobblehead.jpg", "Nana": "nana-bobblehead.jpg", "Nonna": "nonna-bobblehead.jpg"}, "generated": "2026-06-12"};
+const NEWS = [{"t": "Official: FIFA World Cup 2026 News Hub", "s": "FIFA.com", "u": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/news", "d": "The official source for fixtures, results and team news."}, {"t": "World Cup 2026 live news & updates", "s": "Yahoo Sports", "u": "https://sports.yahoo.com/soccer/live/2026-world-cup-news-live-updates-injuries-squads-storylines-as-the-tournament-looms-200000776.html", "d": "Rolling injuries, squads and storylines as the tournament unfolds."}, {"t": "Full match schedule, groups, teams & start times", "s": "Al Jazeera", "u": "https://www.aljazeera.com/sports/2026/6/11/world-cup-2026-full-match-schedule-groups-teams-and-start-times", "d": "Every group, every kickoff time, in one place."}, {"t": "Fixtures, results & bracket tracker", "s": "ESPN", "u": "https://www.espn.com/soccer/story/_/id/48939282/2026-fifa-world-cup-fixtures-results-match-schedule-group-stage-knockout-rounds-bracket", "d": "Live bracket from group stage through the final."}, {"t": "World Cup 2026: Latest news, photos & video", "s": "NBC News", "u": "https://www.nbcnews.com/sports/world-cup", "d": "Headlines, galleries and highlights throughout the tournament."}, {"t": "Why is the World Cup in three countries?", "s": "Al Jazeera", "u": "https://www.aljazeera.com/sports/2026/6/10/why-is-the-fifa-world-cup-2026-being-held-in-three-countries", "d": "The story behind the first-ever three-nation World Cup."}];
+const FACTS = [{"e": "🌎", "big": "3", "t": "host nations", "d": "The first World Cup ever co-hosted by three countries — USA, Canada and Mexico."}, {"e": "🌍", "big": "48", "t": "teams", "d": "The biggest field in World Cup history, up from 32 — across 12 groups."}, {"e": "⚽", "big": "104", "t": "matches", "d": "A record number of games over a record 39 days, June 11 to July 19."}, {"e": "🏟️", "big": "16", "t": "host cities", "d": "11 in the USA, 3 in Mexico, 2 in Canada."}, {"e": "👥", "big": "1,248", "t": "players", "d": "The most players ever — 48 squads submitted final lists on June 2."}, {"e": "🇲🇽", "big": "3x", "t": "Mexico makes history", "d": "With 1970 and 1986, Mexico becomes the first nation to host or co-host three World Cups."}, {"e": "💰", "big": "$50M", "t": "to the winners", "d": "From a record $727M prize fund — every team earns at least $10.5M."}, {"e": "⏳", "big": "25 yrs", "t": "oldest to youngest", "d": "Scotland's Craig Gordon (43) to Mexico's Gilberto Mora (17) — generations apart."}];
+const FLAGCODES = {"Algeria": "dz", "Argentina": "ar", "Australia": "au", "Austria": "at", "Belgium": "be", "Bosnia and Herzegovina": "ba", "Brazil": "br", "Canada": "ca", "Cape Verde": "cv", "Colombia": "co", "Croatia": "hr", "Curaçao": "cw", "Czechia": "cz", "DR Congo": "cd", "Ecuador": "ec", "Egypt": "eg", "England": "gb-eng", "France": "fr", "Germany": "de", "Ghana": "gh", "Haiti": "ht", "Iran": "ir", "Iraq": "iq", "Ivory Coast": "ci", "Japan": "jp", "Jordan": "jo", "Mexico": "mx", "Morocco": "ma", "Netherlands": "nl", "New Zealand": "nz", "Norway": "no", "Panama": "pa", "Paraguay": "py", "Portugal": "pt", "Qatar": "qa", "Saudi Arabia": "sa", "Scotland": "gb-sct", "Senegal": "sn", "South Africa": "za", "South Korea": "kr", "Spain": "es", "Sweden": "se", "Switzerland": "ch", "Tunisia": "tn", "Türkiye": "tr", "USA": "us", "Uruguay": "uy", "Uzbekistan": "uz"};
+const PICKS = "WorldCupPicks.html";
+const flag = t => { const c=FLAGCODES[t]; return c ? '<img class="flg" src="https://flagcdn.com/h20/'+c+'.png" srcset="https://flagcdn.com/h40/'+c+'.png 2x" alt="'+t+'" loading="lazy">' : ''; };
+const pavatar = (name,size) => { const p=(DATA.photos||{})[name]; size=size||26; return p ? '<img src="'+p+'" alt="'+name+'" loading="lazy" style="width:'+size+'px;height:'+size+'px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid var(--gold2);vertical-align:middle;margin-right:6px;flex:0 0 auto">' : ''; };
+const KO = {"1": "3:00 PM ET", "2": "10:00 PM ET", "3": "3:00 PM ET", "4": "9:00 PM ET", "5": "3:00 PM ET", "6": "6:00 PM ET", "7": "9:00 PM ET", "8": "12:00 AM ET", "9": "1:00 PM ET", "10": "4:00 PM ET", "11": "7:00 PM ET", "12": "10:00 PM ET", "13": "12:00 PM ET", "14": "3:00 PM ET", "15": "6:00 PM ET", "16": "9:00 PM ET", "17": "3:00 PM ET", "18": "6:00 PM ET", "19": "9:00 PM ET", "20": "12:00 AM ET", "21": "1:00 PM ET", "22": "4:00 PM ET", "23": "7:00 PM ET", "24": "10:00 PM ET", "25": "12:00 PM ET", "26": "3:00 PM ET", "27": "6:00 PM ET", "28": "9:00 PM ET", "29": "3:00 PM ET", "30": "3:00 PM ET", "31": "9:00 PM ET", "32": "12:00 AM ET", "33": "1:00 PM ET", "34": "4:00 PM ET", "35": "8:00 PM ET", "36": "12:00 AM ET", "37": "12:00 PM ET", "38": "3:00 PM ET", "39": "6:00 PM ET", "40": "9:00 PM ET", "41": "1:00 PM ET", "42": "5:00 PM ET", "43": "8:00 PM ET", "44": "11:00 PM ET", "45": "1:00 PM ET", "46": "4:00 PM ET", "47": "7:00 PM ET", "48": "10:00 PM ET", "49": "3:00 PM ET", "50": "3:00 PM ET", "51": "6:00 PM ET", "52": "6:00 PM ET", "53": "9:00 PM ET", "54": "9:00 PM ET", "55": "4:00 PM ET", "56": "4:00 PM ET", "57": "7:00 PM ET", "58": "7:00 PM ET", "59": "10:00 PM ET", "60": "10:00 PM ET", "61": "3:00 PM ET", "62": "3:00 PM ET", "63": "8:00 PM ET", "64": "8:00 PM ET", "65": "11:00 PM ET", "66": "11:00 PM ET", "67": "5:00 PM ET", "68": "5:00 PM ET", "69": "7:30 PM ET", "70": "7:30 PM ET", "71": "10:00 PM ET", "72": "10:00 PM ET", "73": "3:00 PM ET", "74": "1:00 PM ET", "75": "4:30 PM ET", "76": "9:00 PM ET", "77": "1:00 PM ET", "78": "5:00 PM ET", "79": "9:00 PM ET", "80": "12:00 PM ET", "81": "4:00 PM ET", "82": "8:00 PM ET", "83": "3:00 PM ET", "84": "7:00 PM ET", "85": "11:00 PM ET", "86": "2:00 PM ET", "87": "6:00 PM ET", "88": "9:30 PM ET", "89": "1:00 PM ET", "90": "5:00 PM ET", "91": "4:00 PM ET", "92": "8:00 PM ET", "93": "3:00 PM ET", "94": "8:00 PM ET", "95": "12:00 PM ET", "96": "4:00 PM ET", "97": "4:00 PM ET", "98": "3:00 PM ET", "99": "5:00 PM ET", "100": "9:00 PM ET", "101": "3:00 PM ET", "102": "3:00 PM ET", "103": "5:00 PM ET", "104": "3:00 PM ET"};
+function koInstant(dateStr, ko){
+  const m=(ko||'').match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if(!m) return null;
+  let hh=(+m[1])%12; if(/pm/i.test(m[3])) hh+=12; const mm=+m[2];
+  let day=dateStr;
+  if(hh<6){ const t=new Date(dateStr+"T12:00:00Z"); t.setUTCDate(t.getUTCDate()+1); day=t.toISOString().slice(0,10); }
+  const p=x=>String(x).padStart(2,'0');
+  return new Date(day+"T"+p(hh)+":"+p(mm)+":00-04:00");  // ET (EDT, -04:00)
+}
+function koLocal(n,dateStr){
+  const inst=koInstant(dateStr, KO[n]); if(!inst) return '';
+  try{ return inst.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZoneName:'short'}); }
+  catch(e){ return inst.toLocaleTimeString(); }
+}
+
+function matchStart(m){ const i=koInstant(m.date, KO[m.n]); return i ? i.getTime() : new Date(m.date+"T23:00:00Z").getTime(); }
+function nextMatch(){
+  const now = Date.now();
+  // The next game that hasn't finished AND hasn't kicked off yet —
+  // so it auto-advances the moment the previous game starts.
+  for(const m of DATA.matches){ if(m.ah==null && matchStart(m)>now) return m; }
+  // fallback: any unfinished game, else the last one
+  for(const m of DATA.matches){ if(m.ah==null) return m; }
+  return DATA.matches[DATA.matches.length-1] || null;
+}
+function tickCountdown(){
+  const m = nextMatch();
+  if(!m){ document.getElementById('cd').style.display='none'; return; }
+  const target = new Date(matchStart(m));
+  let diff = Math.max(0, target - new Date());
+  const d = Math.floor(diff/86400000); diff-=d*86400000;
+  const h = Math.floor(diff/3600000); diff-=h*3600000;
+  const mn = Math.floor(diff/60000);
+  document.getElementById('cdd').textContent=d;
+  document.getElementById('cdh').textContent=h;
+  document.getElementById('cdm').textContent=mn;
+  document.getElementById('cdnext').innerHTML = "⏱️ Next up: <b>"+flag(m.h)+" "+m.h+" vs "+m.a+" "+flag(m.a)+"</b>"+(KO[m.n]?" · "+koLocal(m.n,m.date):"");
+}
+tickCountdown(); setInterval(tickCountdown,30000);
+
+function rankStandings(){
+  const s = DATA.standings.map(x=>({...x, total:x.matchPts}));
+  s.sort((a,b)=> b.total-a.total || b.exact-a.exact || b.correct-a.correct || a.name.localeCompare(b.name));
+  let rank=1;
+  s.forEach((x,i)=>{ if(i>0 && (x.total<s[i-1].total)) rank=i+1; x.rank=rank; });
+  return s;
+}
+function renderLB(){
+  const s = rankStandings();
+  document.getElementById('lb').innerHTML = s.map(x=>{
+    const champ = x.champ ? '<span class="chip alive">'+flag(x.champ)+' '+x.champ+' ✓ alive</span>' : '<span class="chip">no champion yet</span>';
+    return '<div class="lbrow '+(x.rank===1?'r1':'')+'">'+
+      '<div class="rk">'+(x.rank===1?'🥇':x.rank)+'</div>'+
+      '<div><div class="nm">'+pavatar(x.name,28)+x.name+' '+champ+'</div>'+
+      '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct</div></div>'+
+      '<div class="tot">'+x.total+'<small>pts</small></div>'+
+    '</div>';
+  }).join('');
+  const anyResults = DATA.matches.some(m=>m.ah!=null);
+  document.getElementById('standNote').innerHTML = anyResults
+    ? '⚽ Standings reflect all finished matches so far. Champion picks shown are still alive in the tournament.'
+    : '⏳ The tournament just kicked off — everyone starts level at 0. Points appear here as soon as results roll in!';
+}
+renderLB();
+
+function renderToday(){
+  const today = DATA.generated;
+  const games = DATA.matches.filter(m=>m.date===today);
+  if(!games.length){ document.getElementById('today').style.display='none'; return; }
+  document.getElementById('todayLead').textContent =
+    fmtD(today)+' — '+games.length+' game'+(games.length>1?'s':'')+' on the slate. Get your picks in before kickoff!';
+  document.getElementById('todayList').innerHTML = games.map(m=>{
+    const done=m.ah!=null;
+    return '<div class="match"><div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
+      '<div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div>'+
+      '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
+      '<div class="mt"><span>Match '+m.n+' · Group '+(m.grp||'')+'</span><span>'+(done?'Full time':(koLocal(m.n,m.date)||'Today'))+'</span></div></div>';
+  }).join('');
+  const nums = games.map(g=>g.n);
+  let ready=0;
+  const rows = DATA.standings.map(p=>{
+    const picks=nums.filter(n=>p.picks.some(pk=>pk.n===n && pk.ph!=null && pk.pa!=null));
+    const all = picks.length===nums.length;
+    if(all) ready++;
+    const cells = nums.map(n=>{
+      const has=p.picks.some(pk=>pk.n===n && pk.ph!=null && pk.pa!=null);
+      return '<span class="chip'+(has?' alive':'')+'" style="margin-left:4px">'+(has?'✅':'⬜')+' M'+n+'</span>';
+    }).join('');
+    return '<div class="lbrow"><div class="rk">'+(all?'✅':'⏳')+'</div>'+
+      '<div><div class="nm">'+pavatar(p.name,26)+p.name+'</div></div><div>'+cells+'</div></div>';
+  }).join('');
+  document.getElementById('readyList').innerHTML = rows;
+  document.getElementById('readyNote').innerHTML = '🟢 <b>'+ready+' of '+DATA.standings.length+
+    '</b> have all of today\'s picks in. ⬜ = still needs to predict that match. Group-stage picks are optional, but every prediction is a shot at points!';
+}
+renderToday();
+
+function renderBadges(){
+  const s = rankStandings();
+  const leader = s[0];
+  const mostExact = [...s].sort((a,b)=>b.exact-a.exact)[0];
+  const mostPicks = [...s].sort((a,b)=>b.picks.length-a.picks.length)[0];
+  const champs = s.filter(x=>x.champ).length;
+  const badges = [
+    {ic:'🥇',ti:'Current Leader', name: leader.total>0?leader.name:null, who: leader.total>0? leader.name+' ('+leader.total+')' : 'Up for grabs!'},
+    {ic:'🎯',ti:'Most Exact Scores', name: mostExact.exact>0?mostExact.name:null, who: mostExact.exact>0? mostExact.name+' ('+mostExact.exact+')' : 'Up for grabs!'},
+    {ic:'✍️',ti:'Most Predictions', name: mostPicks.picks.length>0?mostPicks.name:null, who: mostPicks.picks.length>0? mostPicks.name+' ('+mostPicks.picks.length+')' : '—'},
+    {ic:'🇭🇷',ti:'Champions Locked', name:null, who: champs+' of '+s.length+' picked'},
+  ];
+  document.getElementById('badges').innerHTML = badges.map(b=>
+    '<div class="badge"><div class="ic">'+b.ic+'</div><div class="ti">'+b.ti+'</div><div class="who">'+(b.name?pavatar(b.name,22):'')+b.who+'</div></div>'
+  ).join('');
+}
+renderBadges();
+
+function renderPlayers(){
+  const s = rankStandings();
+  document.getElementById('players').innerHTML = s.map(x=>{
+    const av = pavatar(x.name,30);
+    return '<div class="pl" data-n="'+x.name+'"><div class="h"><span class="nm">'+av+x.name+'</span><span class="pt">'+x.total+' pts</span></div>'+
+    '<div class="sm">'+x.picks.length+' picks · '+x.exact+' exact · rank #'+x.rank+'</div>'+
+    '<div class="ch">'+(x.champ? flag(x.champ)+' '+x.champ : '🤔 no champion yet')+'</div></div>';
+  }).join('');
+  document.querySelectorAll('.pl').forEach(p=>p.onclick=()=>openPlayer(p.dataset.n));
+}
+renderPlayers();
+
+function renderFanCam(){
+  const grid = document.getElementById('fancamGrid');
+  const fans = DATA.players.filter(n=>(DATA.photos||{})[n]);
+  if(!fans.length){ document.getElementById('fancam').style.display='none'; return; }
+  grid.innerHTML = fans.map(n=>{
+    const ph=DATA.photos[n]; const st=DATA.standings.find(s=>s.name===n)||{};
+    return '<div class="pl" data-n="'+n+'" style="padding:0;overflow:hidden">'+
+      '<img src="'+ph+'" alt="'+n+'" loading="lazy" style="width:100%;display:block;aspect-ratio:1/1;object-fit:cover;object-position:center top">'+
+      '<div style="padding:10px 12px"><div class="nm">'+n+'</div>'+
+      '<div class="sm">'+(st.champ? flag(st.champ)+' '+st.champ+' to win' : 'Repping the family colors')+' 🎉</div></div>'+
+    '</div>';
+  }).join('');
+  grid.querySelectorAll('.pl').forEach(p=>p.onclick=()=>openPlayer(p.dataset.n));
+}
+renderFanCam();
+
+function gpMatches(){ return DATA.matches.filter(m=>m.stage==='Group Stage' && m.grp); }
+function gpStats(){
+  const G={};
+  gpMatches().forEach(m=>{
+    const g=m.grp; G[g]=G[g]||{};
+    [m.h,m.a].forEach(t=>{ if(!G[g][t]) G[g][t]={team:t,mp:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
+    if(m.ah==null||m.aa==null) return;
+    const H=G[g][m.h], A=G[g][m.a];
+    H.mp++; A.mp++; H.gf+=m.ah; H.ga+=m.aa; A.gf+=m.aa; A.ga+=m.ah;
+    if(m.ah>m.aa){ H.w++; H.pts+=3; A.l++; }
+    else if(m.ah<m.aa){ A.w++; A.pts+=3; H.l++; }
+    else { H.d++; A.d++; H.pts++; A.pts++; }
+  });
+  return G;
+}
+function rankGroup(teams){
+  const ms=gpMatches();
+  teams.forEach(t=>t.gd=t.gf-t.ga);
+  const arr=teams.slice().sort((a,b)=>b.pts-a.pts);
+  const out=[]; let i=0;
+  while(i<arr.length){
+    let j=i; while(j<arr.length && arr[j].pts===arr[i].pts) j++;
+    const c=arr.slice(i,j);
+    if(c.length>1){
+      const nm=new Set(c.map(t=>t.team)); const h={};
+      c.forEach(t=>h[t.team]={pts:0,gd:0,gf:0});
+      ms.forEach(m=>{ if(m.ah==null) return;
+        if(nm.has(m.h)&&nm.has(m.a)){ const H=h[m.h],A=h[m.a];
+          H.gf+=m.ah; H.gd+=m.ah-m.aa; A.gf+=m.aa; A.gd+=m.aa-m.ah;
+          if(m.ah>m.aa) H.pts+=3; else if(m.ah<m.aa) A.pts+=3; else { H.pts++; A.pts++; } } });
+      c.sort((a,b)=> h[b.team].pts-h[a.team].pts || h[b.team].gd-h[a.team].gd || h[b.team].gf-h[a.team].gf
+        || b.gd-a.gd || b.gf-a.gf || a.team.localeCompare(b.team));
+    }
+    out.push(...c); i=j;
+  }
+  return out;
+}
+function sgn(n){ return (n>0?'+':'')+n; }
+function renderGroups(){
+  const G=gpStats(); const groups=Object.keys(G).sort(); const thirds=[];
+  document.getElementById('groupsWrap').innerHTML = groups.map(g=>{
+    const ranked=rankGroup(Object.values(G[g]));
+    if(ranked[2]) thirds.push(Object.assign({grp:g}, ranked[2]));
+    const rows=ranked.map((t,i)=>{
+      const cls=i<2?'q1':(i===2?'q3':'');
+      return '<tr class="'+cls+'"><td class="pos">'+(i+1)+'</td>'+
+        '<td class="tl">'+flag(t.team)+' '+t.team+'</td>'+
+        '<td>'+t.mp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td>'+
+        '<td>'+t.gf+'</td><td>'+t.ga+'</td><td>'+sgn(t.gd)+'</td><td class="pts">'+t.pts+'</td></tr>';
+    }).join('');
+    return '<div class="gcard"><h3>Group '+g+'</h3><table class="gt">'+
+      '<tr><th class="pos"></th><th class="tl">Team</th><th>MP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr>'+
+      rows+'</table></div>';
+  }).join('');
+  thirds.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.team.localeCompare(b.team));
+  const anyPlayed=DATA.matches.some(m=>m.stage==='Group Stage' && m.ah!=null);
+  document.getElementById('thirdsBox').innerHTML = !anyPlayed
+    ? '<div class="note">⏳ Third-place rankings appear here once group games are played.</div>'
+    : '<div class="card lb">'+thirds.map((t,i)=>
+        '<div class="lbrow'+(i===7?' r1':'')+'" style="grid-template-columns:34px 1fr auto">'+
+        '<div class="rk">'+(i<8?'✅':(i+1))+'</div>'+
+        '<div><div class="nm">'+flag(t.team)+' '+t.team+'</div>'+
+        '<div class="meta">Group '+t.grp+' · GD '+sgn(t.gd)+' · '+(i<8?'qualifying spot':'outside top 8')+'</div></div>'+
+        '<div class="tot">'+t.pts+'<small>pts</small></div></div>'
+      ).join('')+'</div>';
+}
+renderGroups();
+
+function renderPickoff(){
+  const now=Date.now();
+  const started = DATA.matches.filter(m=>matchStart(m)<=now && m.h!=='TBD').sort((a,b)=>matchStart(b)-matchStart(a)).slice(0,24);
+  const box=document.getElementById('pickoffBox');
+  if(!started.length){ box.innerHTML='<div class="note">⏳ No games have kicked off yet — every prediction stays sealed until its match starts.</div>'; return; }
+  box.innerHTML = started.map(m=>{
+    const done=m.ah!=null;
+    let picks=DATA.standings.map(p=>{const pk=p.picks.find(k=>k.n===m.n); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts}:null;}).filter(Boolean);
+    picks.sort(done? (a,b)=>((b.pts||0)-(a.pts||0))||a.name.localeCompare(b.name) : (a,b)=>a.name.localeCompare(b.name));
+    const stat = done? '<span class="postat ft">FULL TIME</span>' : '<span class="postat live">🔴 IN PLAY</span>';
+    const score = done? (m.ah+'–'+m.aa) : 'vs';
+    const rows = picks.length ? picks.map(p=>{
+      const badge = !done? '·' : (p.pts===8?'🔥 8':(p.pts===3?'✅ 3':'0'));
+      return '<div class="porow '+(done&&p.pts>0?'win':'')+'">'+
+        '<div class="pn">'+pavatar(p.name,24)+p.name+'</div>'+
+        '<div class="pp">'+p.ph+'–'+p.pa+'</div>'+
+        '<div class="pb">'+badge+'</div></div>';
+    }).join('') : '<div class="porow"><div class="pn" style="color:var(--muted);font-weight:600">No one predicted this one 🤷</div><div></div><div></div></div>';
+    let exactLine='';
+    if(done){ const ex=picks.filter(p=>p.pts===8).map(p=>p.name); if(ex.length) exactLine='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
+    return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+score+'</span>'+m.a+' '+flag(m.a)+'</div>'+stat+'</div>'+rows+exactLine+'</div>';
+  }).join('');
+}
+renderPickoff();
+function mByN(n){ return DATA.matches.find(m=>m.n===n); }
+function openPlayer(name){
+  const x = DATA.standings.find(p=>p.name===name);
+  const rows = x.picks.length? x.picks.map(pk=>{
+    const m=mByN(pk.n);
+    const res = m && m.ah!=null ? m.ah+'–'+m.aa : 'TBD';
+    const pz = pk.pts==null? '—' : (pk.pts===8?'🔥 8':(pk.pts===3?'✅ 3':'0'));
+    return '<div class="prow"><span class="pp">'+flag(m.h)+' '+m.h+' '+pk.ph+'–'+pk.pa+' '+m.a+' '+flag(m.a)+'</span><span class="pz">'+pz+'</span></div>'+
+      '<div class="prow" style="border:none;padding-top:0;margin-top:-6px"><span class="sm" style="font-size:11px;color:var(--muted)">Match '+pk.n+' · actual: '+res+'</span><span></span></div>';
+  }).join('') : '<p class="sm">No match predictions entered yet.</p>';
+  const _ph=(DATA.photos||{})[name];
+  const pic = _ph ? '<img src="'+_ph+'" alt="'+name+'" style="width:100%;max-width:260px;display:block;margin:0 auto 12px;border-radius:14px;border:3px solid var(--gold2);box-shadow:0 4px 14px rgba(0,0,0,.15)">' : '';
+  document.getElementById('sheet').innerHTML =
+    '<h3>'+name+'</h3><div class="sm">'+x.matchPts+' match pts · '+x.exact+' exact · '+(x.champ?('Champion: '+flag(x.champ)+' '+x.champ):'no champion picked yet')+'</div>'+
+    pic + rows + '<button class="closeb" onclick="closeM()">Close</button>';
+  document.getElementById('modal').classList.add('show');
+}
+function closeM(){ document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').onclick=e=>{ if(e.target.id==='modal') closeM(); };
+
+const dates=[...new Set(DATA.matches.map(m=>m.date))];
+let mf=dates[0];
+function fmtD(d){ return new Date(d+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}); }
+function renderChips(){
+  document.getElementById('dateChips').innerHTML = dates.map(d=>'<div class="c '+(d===mf?'on':'')+'" data-d="'+d+'">'+fmtD(d)+'</div>').join('');
+  document.querySelectorAll('#dateChips .c').forEach(c=>c.onclick=()=>{mf=c.dataset.d;renderChips();renderMatches();});
+}
+function isKnk(m){ return m.stage && m.stage.indexOf('Group')<0; }
+function renderMatches(){
+  const items=DATA.matches.filter(m=>m.date===mf);
+  document.getElementById('matchList').innerHTML=items.map(m=>{
+    const done=m.ah!=null;
+    const stage=isKnk(m)?m.stage:('Group '+(m.grp||''));
+    return '<div class="match '+(isKnk(m)?'knk':'')+'">'+
+      '<div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
+      '<div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div>'+
+      '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
+      '<div class="mt"><span>Match '+m.n+' · '+stage+'</span><span>'+fmtD(m.date)+(KO[m.n]?' · '+koLocal(m.n,m.date):'')+'</span></div>'+
+    '</div>';
+  }).join('');
+}
+renderChips(); renderMatches();
+
+function renderBracket(){
+  const ko=DATA.matches.filter(m=>isKnk(m));
+  const byStage={};
+  ko.forEach(m=>{(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
+  const order=['Round of 32','Round of 16','Quarter-final','Quarter-finals','Semi-final','Semi-finals','Third place','Third-place','Final'];
+  const stages=Object.keys(byStage).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  document.getElementById('bracket').innerHTML = stages.map(st=>{
+    const rows=byStage[st].map(m=>{
+      const done=m.ah!=null;
+      return '<div class="match"><div class="tm">'+m.h+'</div><div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div><div class="tm a">'+m.a+'</div><div class="mt"><span>Match '+m.n+'</span><span>'+fmtD(m.date)+'</span></div></div>';
+    }).join('');
+    return '<div style="padding:6px 0"><div style="font-weight:900;color:#b06a00;padding:10px 14px 4px">'+st+'</div>'+rows+'</div>';
+  }).join('');
+}
+renderBracket();
+
+document.getElementById('facts').innerHTML = FACTS.map(f=>
+  '<div class="fact"><div class="e">'+f.e+'</div><div class="big">'+f.big+'</div><div class="t">'+f.t+'</div><div class="d">'+f.d+'</div></div>'
+).join('');
+document.getElementById('news').innerHTML = NEWS.map(n=>
+  '<a class="na" href="'+n.u+'" target="_blank" rel="noopener"><div class="src">'+n.s+'</div><div class="ti">'+n.t+'</div><div class="d">'+n.d+'</div><div class="go">Read →</div></a>'
+).join('');
+
+const secs=[...document.querySelectorAll('.sec, #top')];
+const navlinks=[...document.querySelectorAll('#nav a')];
+window.addEventListener('scroll',()=>{
+  let cur='top';
+  secs.forEach(s=>{ if(window.scrollY+90>=s.offsetTop) cur=s.id; });
+  navlinks.forEach(a=>a.classList.toggle('on', a.getAttribute('href')==='#'+cur));
+},{passive:true});
+</script>
+<script>
+/* PICKS DATA PATCH — regenerated from FamilyWorldCup2026.xlsx (source of truth).
+   Replace this entire <script> block whenever picks/results change. */
+DATA.standings = [{"name": "Ewan", "matchPts": 11, "exact": 1, "correct": 2, "champ": "Spain", "photo": null, "picks": [{"n": 1, "ph": 3, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 2, "pa": 1, "pts": null}, {"n": 4, "ph": 2, "pa": 0, "pts": null}, {"n": 5, "ph": 0, "pa": 2, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 2, "pts": null}, {"n": 8, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Nana", "matchPts": 3, "exact": 0, "correct": 1, "champ": "France", "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": null}, {"n": 4, "ph": 2, "pa": 0, "pts": null}]}, {"name": "Emrys", "matchPts": 6, "exact": 0, "correct": 2, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 1, "pa": 0, "pts": 3}, {"n": 2, "ph": 3, "pa": 1, "pts": 3}, {"n": 3, "ph": 2, "pa": 2, "pts": null}, {"n": 4, "ph": 1, "pa": 2, "pts": null}]}, {"name": "Nonno", "matchPts": 3, "exact": 0, "correct": 1, "champ": "Brazil", "photo": "nonno-bobblehead.jpg", "picks": [{"n": 1, "ph": 3, "pa": 0, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": null}, {"n": 4, "ph": 3, "pa": 1, "pts": null}, {"n": 5, "ph": 0, "pa": 4, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 4, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 7, "pa": 0, "pts": null}, {"n": 10, "ph": 2, "pa": 1, "pts": null}]}, {"name": "Nonna", "matchPts": 8, "exact": 1, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 0, "pts": null}, {"n": 4, "ph": 2, "pa": 1, "pts": null}]}, {"name": "Boompa", "matchPts": 0, "exact": 0, "correct": 0, "champ": "France", "photo": null, "picks": [{"n": 1, "ph": 0, "pa": 1, "pts": 0}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 3, "pa": 0, "pts": null}, {"n": 4, "ph": 1, "pa": 1, "pts": null}, {"n": 5, "ph": 0, "pa": 1, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 1, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 3, "pa": 0, "pts": null}, {"n": 10, "ph": 1, "pa": 1, "pts": null}, {"n": 11, "ph": 1, "pa": 2, "pts": null}, {"n": 12, "ph": 0, "pa": 1, "pts": null}, {"n": 13, "ph": 3, "pa": 0, "pts": null}, {"n": 14, "ph": 3, "pa": 2, "pts": null}, {"n": 15, "ph": 1, "pa": 1, "pts": null}, {"n": 16, "ph": 0, "pa": 0, "pts": null}, {"n": 17, "ph": 3, "pa": 0, "pts": null}, {"n": 18, "ph": 0, "pa": 3, "pts": null}, {"n": 19, "ph": 2, "pa": 0, "pts": null}, {"n": 20, "ph": 1, "pa": 0, "pts": null}, {"n": 21, "ph": 2, "pa": 0, "pts": null}, {"n": 22, "ph": 3, "pa": 1, "pts": null}, {"n": 23, "ph": 1, "pa": 1, "pts": null}, {"n": 24, "ph": 0, "pa": 2, "pts": null}, {"n": 25, "ph": 0, "pa": 0, "pts": null}, {"n": 26, "ph": 1, "pa": 1, "pts": null}, {"n": 27, "ph": 2, "pa": 1, "pts": null}, {"n": 28, "ph": 2, "pa": 2, "pts": null}, {"n": 29, "ph": 1, "pa": 1, "pts": null}, {"n": 30, "ph": 2, "pa": 0, "pts": null}, {"n": 31, "ph": 2, "pa": 0, "pts": null}, {"n": 32, "ph": 3, "pa": 1, "pts": null}, {"n": 33, "ph": 1, "pa": 1, "pts": null}, {"n": 34, "ph": 2, "pa": 0, "pts": null}, {"n": 35, "ph": 1, "pa": 1, "pts": null}, {"n": 36, "ph": 1, "pa": 2, "pts": null}, {"n": 37, "ph": 3, "pa": 1, "pts": null}, {"n": 38, "ph": 2, "pa": 0, "pts": null}, {"n": 39, "ph": 1, "pa": 1, "pts": null}, {"n": 40, "ph": 1, "pa": 2, "pts": null}, {"n": 41, "ph": 2, "pa": 1, "pts": null}, {"n": 42, "ph": 3, "pa": 0, "pts": null}, {"n": 43, "ph": 1, "pa": 0, "pts": null}, {"n": 44, "ph": 1, "pa": 1, "pts": null}, {"n": 45, "ph": 2, "pa": 0, "pts": null}, {"n": 46, "ph": 2, "pa": 0, "pts": null}, {"n": 47, "ph": 1, "pa": 1, "pts": null}, {"n": 48, "ph": 1, "pa": 0, "pts": null}, {"n": 49, "ph": 1, "pa": 2, "pts": null}, {"n": 50, "ph": 1, "pa": 1, "pts": null}, {"n": 51, "ph": 2, "pa": 3, "pts": null}, {"n": 52, "ph": 1, "pa": 1, "pts": null}, {"n": 53, "ph": 3, "pa": 1, "pts": null}, {"n": 54, "ph": 2, "pa": 0, "pts": null}, {"n": 55, "ph": 1, "pa": 3, "pts": null}, {"n": 56, "ph": 1, "pa": 1, "pts": null}, {"n": 57, "ph": 0, "pa": 2, "pts": null}, {"n": 58, "ph": 2, "pa": 2, "pts": null}, {"n": 59, "ph": 0, "pa": 3, "pts": null}, {"n": 60, "ph": 0, "pa": 2, "pts": null}, {"n": 61, "ph": 1, "pa": 2, "pts": null}, {"n": 62, "ph": 0, "pa": 2, "pts": null}, {"n": 63, "ph": 0, "pa": 2, "pts": null}, {"n": 64, "ph": 0, "pa": 1, "pts": null}, {"n": 65, "ph": 0, "pa": 2, "pts": null}, {"n": 66, "ph": 3, "pa": 0, "pts": null}, {"n": 67, "ph": 0, "pa": 2, "pts": null}, {"n": 68, "ph": 0, "pa": 0, "pts": null}, {"n": 69, "ph": 1, "pa": 3, "pts": null}, {"n": 70, "ph": 1, "pa": 1, "pts": null}, {"n": 71, "ph": 2, "pa": 0, "pts": null}, {"n": 72, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Xavier", "matchPts": 16, "exact": 2, "correct": 2, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 1, "pts": null}, {"n": 4, "ph": 2, "pa": 1, "pts": null}]}, {"name": "Autumn", "matchPts": 8, "exact": 1, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 1, "pa": 1, "pts": 0}, {"n": 3, "ph": 2, "pa": 0, "pts": null}, {"n": 4, "ph": 1, "pa": 1, "pts": null}]}, {"name": "River", "matchPts": 3, "exact": 0, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 0, "pts": null}, {"n": 4, "ph": 2, "pa": 1, "pts": null}]}];
+DATA.generated = "2026-06-12";
+/* ---- refreshed 6/12 results + standings (overrides the line above) ---- */
+DATA.standings = [{"name": "Ewan", "matchPts": 14, "exact": 1, "correct": 3, "champ": "Spain", "photo": null, "picks": [{"n": 1, "ph": 3, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 2, "pa": 1, "pts": 0}, {"n": 4, "ph": 2, "pa": 0, "pts": 3}, {"n": 5, "ph": 0, "pa": 2, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 2, "pts": null}, {"n": 8, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Nana", "matchPts": 14, "exact": 1, "correct": 3, "champ": "France", "photo": "nana-bobblehead.jpg", "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 2, "pa": 0, "pts": 3}]}, {"name": "Emrys", "matchPts": 9, "exact": 0, "correct": 3, "champ": null, "photo": "emrys-bobblehead.jpg", "picks": [{"n": 1, "ph": 1, "pa": 0, "pts": 3}, {"n": 2, "ph": 3, "pa": 1, "pts": 3}, {"n": 3, "ph": 2, "pa": 2, "pts": 3}, {"n": 4, "ph": 1, "pa": 2, "pts": 0}]}, {"name": "Nonno", "matchPts": 14, "exact": 1, "correct": 3, "champ": "Brazil", "photo": "nonno-bobblehead.jpg", "picks": [{"n": 1, "ph": 3, "pa": 0, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 3, "pa": 1, "pts": 3}, {"n": 5, "ph": 0, "pa": 4, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 4, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 7, "pa": 0, "pts": null}, {"n": 10, "ph": 2, "pa": 1, "pts": null}]}, {"name": "Nonna", "matchPts": 11, "exact": 1, "correct": 2, "champ": null, "photo": "nonna-bobblehead.jpg", "picks": [{"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 0, "pts": 0}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}, {"name": "Boompa", "matchPts": 0, "exact": 0, "correct": 0, "champ": "France", "photo": null, "picks": [{"n": 1, "ph": 0, "pa": 1, "pts": 0}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 3, "pa": 0, "pts": 0}, {"n": 4, "ph": 1, "pa": 1, "pts": 0}, {"n": 5, "ph": 0, "pa": 1, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 1, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 3, "pa": 0, "pts": null}, {"n": 10, "ph": 1, "pa": 1, "pts": null}, {"n": 11, "ph": 1, "pa": 2, "pts": null}, {"n": 12, "ph": 0, "pa": 1, "pts": null}, {"n": 13, "ph": 3, "pa": 0, "pts": null}, {"n": 14, "ph": 3, "pa": 2, "pts": null}, {"n": 15, "ph": 1, "pa": 1, "pts": null}, {"n": 16, "ph": 0, "pa": 0, "pts": null}, {"n": 17, "ph": 3, "pa": 0, "pts": null}, {"n": 18, "ph": 0, "pa": 3, "pts": null}, {"n": 19, "ph": 2, "pa": 0, "pts": null}, {"n": 20, "ph": 1, "pa": 0, "pts": null}, {"n": 21, "ph": 2, "pa": 0, "pts": null}, {"n": 22, "ph": 3, "pa": 1, "pts": null}, {"n": 23, "ph": 1, "pa": 1, "pts": null}, {"n": 24, "ph": 0, "pa": 2, "pts": null}, {"n": 25, "ph": 0, "pa": 0, "pts": null}, {"n": 26, "ph": 1, "pa": 1, "pts": null}, {"n": 27, "ph": 2, "pa": 1, "pts": null}, {"n": 28, "ph": 2, "pa": 2, "pts": null}, {"n": 29, "ph": 1, "pa": 1, "pts": null}, {"n": 30, "ph": 2, "pa": 0, "pts": null}, {"n": 31, "ph": 2, "pa": 0, "pts": null}, {"n": 32, "ph": 3, "pa": 1, "pts": null}, {"n": 33, "ph": 1, "pa": 1, "pts": null}, {"n": 34, "ph": 2, "pa": 0, "pts": null}, {"n": 35, "ph": 1, "pa": 1, "pts": null}, {"n": 36, "ph": 1, "pa": 2, "pts": null}, {"n": 37, "ph": 3, "pa": 1, "pts": null}, {"n": 38, "ph": 2, "pa": 0, "pts": null}, {"n": 39, "ph": 1, "pa": 1, "pts": null}, {"n": 40, "ph": 1, "pa": 2, "pts": null}, {"n": 41, "ph": 2, "pa": 1, "pts": null}, {"n": 42, "ph": 3, "pa": 0, "pts": null}, {"n": 43, "ph": 1, "pa": 0, "pts": null}, {"n": 44, "ph": 1, "pa": 1, "pts": null}, {"n": 45, "ph": 2, "pa": 0, "pts": null}, {"n": 46, "ph": 2, "pa": 0, "pts": null}, {"n": 47, "ph": 1, "pa": 1, "pts": null}, {"n": 48, "ph": 1, "pa": 0, "pts": null}, {"n": 49, "ph": 1, "pa": 2, "pts": null}, {"n": 50, "ph": 1, "pa": 1, "pts": null}, {"n": 51, "ph": 2, "pa": 3, "pts": null}, {"n": 52, "ph": 1, "pa": 1, "pts": null}, {"n": 53, "ph": 3, "pa": 1, "pts": null}, {"n": 54, "ph": 2, "pa": 0, "pts": null}, {"n": 55, "ph": 1, "pa": 3, "pts": null}, {"n": 56, "ph": 1, "pa": 1, "pts": null}, {"n": 57, "ph": 0, "pa": 2, "pts": null}, {"n": 58, "ph": 2, "pa": 2, "pts": null}, {"n": 59, "ph": 0, "pa": 3, "pts": null}, {"n": 60, "ph": 0, "pa": 2, "pts": null}, {"n": 61, "ph": 1, "pa": 2, "pts": null}, {"n": 62, "ph": 0, "pa": 2, "pts": null}, {"n": 63, "ph": 0, "pa": 2, "pts": null}, {"n": 64, "ph": 0, "pa": 1, "pts": null}, {"n": 65, "ph": 0, "pa": 2, "pts": null}, {"n": 66, "ph": 3, "pa": 0, "pts": null}, {"n": 67, "ph": 0, "pa": 2, "pts": null}, {"n": 68, "ph": 0, "pa": 0, "pts": null}, {"n": 69, "ph": 1, "pa": 3, "pts": null}, {"n": 70, "ph": 1, "pa": 1, "pts": null}, {"n": 71, "ph": 2, "pa": 0, "pts": null}, {"n": 72, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Xavier", "matchPts": 27, "exact": 3, "correct": 4, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}, {"name": "Autumn", "matchPts": 8, "exact": 1, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 1, "pa": 1, "pts": 0}, {"n": 3, "ph": 2, "pa": 0, "pts": 0}, {"n": 4, "ph": 1, "pa": 1, "pts": 0}]}, {"name": "River", "matchPts": 6, "exact": 0, "correct": 2, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 0, "pts": 0}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}];
+DATA.photos = Object.assign(DATA.photos||{}, {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg","Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg"});
+var RESULTS = {1:[2,0],2:[2,1],3:[1,1],4:[4,1]};
+DATA.matches.forEach(function(m){ if(RESULTS[m.n]){ m.ah=RESULTS[m.n][0]; m.aa=RESULTS[m.n][1]; } });
+function reRenderAll(){ renderLB(); renderBadges(); renderPlayers(); renderFanCam(); renderToday(); renderGroups(); renderPickoff(); renderChips(); renderMatches(); renderBracket(); tickCountdown(); }
+reRenderAll();
+/* Live data source: if data.json is present (when served over http), use it as the
+   source of truth and re-render. Falls back silently to the baked-in data above
+   (e.g. when opened directly as a file). This is the channel the daily updater writes. */
+function applyData(d){
+  if(!d) return;
+  if(d.standings) DATA.standings=d.standings;
+  if(d.photos) DATA.photos=Object.assign(DATA.photos||{}, d.photos);
+  if(d.generated) DATA.generated=d.generated;
+  if(d.results){ DATA.matches.forEach(function(m){ var r=d.results[m.n]||d.results[String(m.n)]; if(r){ m.ah=r[0]; m.aa=r[1]; } }); }
+  reRenderAll();
+}
+fetch('data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(applyData).catch(function(){});
+</script>
+</body>
+</html>
