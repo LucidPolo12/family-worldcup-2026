@@ -54,11 +54,21 @@ def main():
         standings.append({"name": name, "matchPts": mp, "exact": ex, "correct": cor,
                           "champ": CHAMPS.get(name), "photo": PHOTOS.get(name), "picks": picks})
 
+    # Preserve win/draw/win probabilities written by fetch_odds.py (don't wipe them)
+    probs = {}
+    if os.path.exists(OUT):
+        try:
+            with open(OUT, encoding="utf-8") as f:
+                probs = json.load(f).get("probs", {}) or {}
+        except Exception:
+            probs = {}
+
     data = {"generated": generated, "standings": standings,
-            "results": results, "photos": PHOTOS}
+            "results": results, "photos": PHOTOS, "probs": probs}
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
-    print(f"Wrote {OUT}: {len(standings)} players, {len(results)} results, generated={generated}")
+    print(f"Wrote {OUT}: {len(standings)} players, {len(results)} results, "
+          f"{len(probs)} probs kept, generated={generated}")
 
 if __name__ == "__main__":
     main()

@@ -113,6 +113,11 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .porow .pb{font-size:12px;font-weight:800;min-width:30px;text-align:right}
 .porow.win{background:#eafaf0}
 .poexact{font-size:12px;color:var(--g2);font-weight:700;padding:8px 13px;background:#f6fbf7}
+.pbar{grid-column:1/-1;display:flex;height:15px;border-radius:6px;overflow:hidden;margin-top:9px;font-size:9px;font-weight:800;color:#fff}
+.pseg{display:flex;align-items:center;justify-content:center;min-width:0;white-space:nowrap}
+.pseg.ph{background:#1aa75a}.pseg.pd{background:#97a4ad}.pseg.pa{background:#2f6fd0}
+.pbl{grid-column:1/-1;display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px}
+.pbl .pdash{font-weight:800;color:#8794a0}
 </style>
 </head>
 <body>
@@ -251,6 +256,17 @@ function koLocal(n,dateStr){
   try{ return inst.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZoneName:'short'}); }
   catch(e){ return inst.toLocaleTimeString(); }
 }
+function renderProbBar(m){
+  const p=(DATA.probs||{})[m.n]||(DATA.probs||{})[String(m.n)];
+  if(!p) return '';
+  const h=Math.round(p.h*100), d=Math.round(p.d*100), a=Math.round(p.a*100);
+  return '<div class="pbar" title="Pre-match win probability (bookmaker odds)">'+
+      '<div class="pseg ph" style="width:'+h+'%">'+(h>=12?h+'%':'')+'</div>'+
+      '<div class="pseg pd" style="width:'+d+'%">'+(d>=12?d+'%':'')+'</div>'+
+      '<div class="pseg pa" style="width:'+a+'%">'+(a>=12?a+'%':'')+'</div>'+
+    '</div>'+
+    '<div class="pbl"><span>'+flag(m.h)+' '+h+'%</span><span class="pdash">Draw '+d+'%</span><span>'+a+'% '+flag(m.a)+'</span></div>';
+}
 
 function matchStart(m){ const i=koInstant(m.date, KO[m.n]); return i ? i.getTime() : new Date(m.date+"T23:00:00Z").getTime(); }
 function nextMatch(){
@@ -313,7 +329,7 @@ function renderToday(){
     return '<div class="match"><div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
       '<div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div>'+
       '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
-      '<div class="mt"><span>Match '+m.n+' · Group '+(m.grp||'')+'</span><span>'+(done?'Full time':(koLocal(m.n,m.date)||'Today'))+'</span></div></div>';
+      '<div class="mt"><span>Match '+m.n+' · Group '+(m.grp||'')+'</span><span>'+(done?'Full time':(koLocal(m.n,m.date)||'Today'))+'</span></div>'+(done?'':renderProbBar(m))+'</div>';
   }).join('');
   const nums = games.map(g=>g.n);
   let ready=0;
@@ -510,6 +526,7 @@ function renderMatches(){
       '<div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div>'+
       '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
       '<div class="mt"><span>Match '+m.n+' · '+stage+'</span><span>'+fmtD(m.date)+(KO[m.n]?' · '+koLocal(m.n,m.date):'')+'</span></div>'+
+      (m.ah==null?renderProbBar(m):'')+
     '</div>';
   }).join('');
 }
@@ -565,6 +582,7 @@ function applyData(d){
   if(!d) return;
   if(d.standings) DATA.standings=d.standings;
   if(d.photos) DATA.photos=Object.assign(DATA.photos||{}, d.photos);
+  if(d.probs) DATA.probs=d.probs;
   if(d.generated) DATA.generated=d.generated;
   if(d.results){ DATA.matches.forEach(function(m){ var r=d.results[m.n]||d.results[String(m.n)]; if(r){ m.ah=r[0]; m.aa=r[1]; } }); }
   reRenderAll();
