@@ -11,6 +11,11 @@ on:
 permissions:
   contents: write          # allow the workflow to commit results back to the repo
 
+# Share one queue with the fast picks job so the two never push at the same time.
+concurrency:
+  group: wc-publish
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -53,5 +58,6 @@ jobs:
             echo "No changes today."
           else
             git commit -m "Daily auto-update: scores, standings & odds"
+            git pull --rebase origin main || true
             git push
           fi

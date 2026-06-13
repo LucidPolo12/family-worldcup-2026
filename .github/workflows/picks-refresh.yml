@@ -1,0 +1,47 @@
+name: Picks refresh (fast)
+
+# Lightweight: just pulls family picks from the Google Sheet and rebuilds the site
+# data. No odds/scores API calls, so it can run often. Runs every ~5 minutes.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+# Share one queue with the daily scores/odds job so they never push at the same time.
+concurrency:
+  group: wc-publish
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install openpyxl
+      - name: Ingest family picks from the Google Sheet
+        env:
+          PICKS_CSV_URL: ${{ secrets.PICKS_CSV_URL }}
+        run: python fetch_picks.py || echo "picks ingest skipped this run"
+      - name: Rebuild data.json (keeps existing odds)
+        run: python regenerate_data.py
+      - name: Commit & push only if something changed
+        run: |
+          git config user.name "WC Picks Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data.json
+          [ -f picks.json ] && git add picks.json || true
+          [ -f results.json ] && git add results.json || true
+          if git diff --staged --quiet; then
+            echo "No pick changes this run."
+          else
+            git commit -m "Auto: refresh family picks"
+            git pull --rebase origin main || true
+            git push
+          fi
