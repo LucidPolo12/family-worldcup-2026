@@ -120,7 +120,14 @@ function koLocal(f){ const t=startTime(f); if(!t) return f.ko||''; try{ return t
 // Build date filter chips
 const dates = [...new Set(FIX.map(f=>f.date))];
 function fmtDate(d){ const o=new Date(d+"T12:00:00"); return o.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
-let activeFilter = "all";
+function defaultFilter(){
+  const now=new Date();
+  const today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  if(dates.includes(today)) return today;
+  const next=dates.find(d=>d>=today);
+  return next||"all";
+}
+let activeFilter = defaultFilter();
 
 const chipsEl = document.getElementById("chips");
 function renderChips(){
@@ -128,6 +135,8 @@ function renderChips(){
   dates.forEach(d=>{ html += '<div class="chip '+(activeFilter===d?"active":"")+'" data-f="'+d+'">'+fmtDate(d)+'</div>'; });
   chipsEl.innerHTML = html;
   chipsEl.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{activeFilter=c.dataset.f;renderChips();renderList();});
+  const on=chipsEl.querySelector(".chip.active");
+  if(on&&on.scrollIntoView) on.scrollIntoView({inline:"center",block:"nearest"});
 }
 
 const listEl = document.getElementById("list");
