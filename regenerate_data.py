@@ -5,7 +5,7 @@ data.json is the LIVE data source the portal fetches on load. After any change t
 the spreadsheet (results or picks), run:  python3 regenerate_data.py
 Then publish (commit/push or upload data.json). The portal picks it up automatically.
 """
-import openpyxl, json, os
+import openpyxl, json, os, datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 XLSX = os.path.join(HERE, "FamilyWorldCup2026.xlsx")
@@ -19,6 +19,16 @@ CHAMPS = {"Ewan":"Spain","Nana":"France","Nonno":"Brazil","Boompa":"France"}
 PHOTOS = {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg",
           "Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg",
           "Boompa":"boompa-bobblehead.jpg","Autumn":"autumn-bobblehead.jpg"}
+
+def compute_ranks(standings):
+    """Rank purely by points (ties share a rank), matching the front-end logic."""
+    s = sorted(standings, key=lambda x: (-x["matchPts"], -x["exact"], -x["correct"], x["name"]))
+    ranks, rank = {}, 1
+    for i, x in enumerate(s):
+        if i > 0 and x["matchPts"] < s[i-1]["matchPts"]:
+            rank = i + 1
+        ranks[x["name"]] = rank
+    return ranks
 
 def pts(ph, pa, ah, aa):
     if None in (ph, pa, ah, aa): return None
@@ -89,17 +99,31 @@ def main():
         standings.append({"name": name, "matchPts": mp, "exact": ex, "correct": cor,
                           "champ": CHAMPS.get(name), "photo": PHOTOS.get(name), "picks": picks})
 
-    # Preserve win/draw/win probabilities written by fetch_odds.py (don't wipe them)
-    probs = {}
+    # Load the existing data.json once: keep probabilities, and use its rank
+    # snapshots to work out day-over-day leaderboard movement.
+    old = {}
     if os.path.exists(OUT):
         try:
             with open(OUT, encoding="utf-8") as f:
-                probs = json.load(f).get("probs", {}) or {}
+                old = json.load(f) or {}
         except Exception:
-            probs = {}
+            old = {}
+    probs = old.get("probs", {}) or {}
+
+    # Day-over-day movement: prevRanks is the baseline (the ranks as of the last
+    # day we ran). On the first run of a new day, yesterday's final ranks become
+    # the new baseline; multiple runs the same day keep the same baseline.
+    today_str = datetime.date.today().isoformat()
+    cur_ranks = compute_ranks(standings)
+    prev_ranks = old.get("prevRanks")
+    old_today = old.get("ranksToday")
+    if old_today and old_today.get("date") != today_str:
+        prev_ranks = old_today
 
     data = {"generated": generated, "standings": standings,
-            "results": results, "photos": PHOTOS, "probs": probs}
+            "results": results, "photos": PHOTOS, "probs": probs,
+            "prevRanks": prev_ranks,
+            "ranksToday": {"date": today_str, "ranks": cur_ranks}}
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
     print(f"Wrote {OUT}: {len(standings)} players, {len(results)} results, "
