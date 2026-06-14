@@ -397,10 +397,18 @@ function renderToday(){
     fmtD(today)+' — '+games.length+' game'+(games.length>1?'s':'')+' on the slate. Get your picks in before kickoff!';
   document.getElementById('todayList').innerHTML = games.map(m=>{
     const done=m.ah!=null;
+    const lv=LIVE[m.n];
+    const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
+    const scoreCell = done ? '<span class="v">'+m.ah+'–'+m.aa+'</span>'
+      : hasLive ? '<span class="v">'+lv.h+'–'+lv.a+'</span>'
+      : '<span class="v tbd">vs</span>';
+    const statusR = done ? 'Full time'
+      : hasLive ? (lv.state==='post' ? '✅ Full time' : '🔴 LIVE'+(lv.clock?(' '+lv.clock):''))
+      : (koLocal(m.n,m.date)||'Today');
     return '<div class="match"><div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
-      '<div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div>'+
+      '<div class="sc">'+scoreCell+'</div>'+
       '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
-      '<div class="mt"><span>Match '+m.n+' · Group '+(m.grp||'')+'</span><span>'+(done?'Full time':(koLocal(m.n,m.date)||'Today'))+'</span></div>'+(done?'':renderProbBar(m))+'</div>';
+      '<div class="mt"><span>Match '+m.n+' · Group '+(m.grp||'')+'</span><span>'+statusR+'</span></div>'+((!done&&!hasLive)?renderProbBar(m):'')+'</div>';
   }).join('');
   const nums = games.map(g=>g.n);
   let ready=0;
