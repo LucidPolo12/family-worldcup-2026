@@ -426,8 +426,13 @@ function renderBadges(){
   const mostExact = [...s].sort((a,b)=>b.exact-a.exact)[0];
   const mostPicks = [...s].sort((a,b)=>b.picks.length-a.picks.length)[0];
   const champs = s.filter(x=>x.champ).length;
+  // Biggest climber vs yesterday (largest positive rank gain)
+  const pr = DATA.prevRanks && DATA.prevRanks.ranks ? DATA.prevRanks.ranks : null;
+  let climber=null, climb=0;
+  if(pr){ s.forEach(x=>{ const p=pr[x.name]; if(p!=null){ const d=p-x.rank; if(d>climb){climb=d; climber=x.name;} } }); }
   const badges = [
     {ic:'🥇',ti:'Current Leader', name: leader.total>0?leader.name:null, who: leader.total>0? leader.name+' ('+leader.total+')' : 'Up for grabs!'},
+    {ic:'🚀',ti:'Biggest Climber Today', name: climber, who: climber? climber+' (▲'+climb+')' : 'No movement yet'},
     {ic:'🎯',ti:'Most Exact Scores', name: mostExact.exact>0?mostExact.name:null, who: mostExact.exact>0? mostExact.name+' ('+mostExact.exact+')' : 'Up for grabs!'},
     {ic:'✍️',ti:'Most Predictions', name: mostPicks.picks.length>0?mostPicks.name:null, who: mostPicks.picks.length>0? mostPicks.name+' ('+mostPicks.picks.length+')' : '—'},
     {ic:'🇭🇷',ti:'Champions Locked', name:null, who: champs+' of '+s.length+' picked'},
