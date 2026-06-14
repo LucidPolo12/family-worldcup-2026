@@ -583,37 +583,62 @@ function fetchLive(){
 function provPts(ph,pa,ah,aa){ if(ph==null||pa==null||ah==null||aa==null) return 0;
   if(ph===ah&&pa===aa) return 8; const s=(x,y)=>(x>y)-(x<y); return s(ph,pa)===s(ah,aa)?3:0; }
 
+function pocardHtml(m){
+  const done=m.ah!=null;
+  const lv=LIVE[m.n];
+  const hasLive = !done && lv && (lv.state==='in'||lv.state==='post') && lv.h!=null && !isNaN(lv.h);
+  let sh, sa, scoreHtml, statHtml, scored;
+  if(done){ sh=m.ah; sa=m.aa; scoreHtml=m.ah+'–'+m.aa; statHtml='<span class="postat ft">FULL TIME</span>'; scored=true; }
+  else if(hasLive){ sh=lv.h; sa=lv.a; scoreHtml=lv.h+'–'+lv.a; scored=true;
+    statHtml = lv.state==='post' ? '<span class="postat ft">FULL TIME</span>'
+             : '<span class="postat live">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'; }
+  else { scoreHtml='vs'; statHtml='<span class="postat live">🔴 IN PLAY</span>'; scored=false; }
+  const liveScored = hasLive && lv.state!=='post';
+  let picks=DATA.standings.map(function(p){const pk=p.picks.find(function(k){return k.n===m.n;}); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts}:null;}).filter(Boolean);
+  const ptOf = function(p){ return done ? (p.pts||0) : (scored ? provPts(p.ph,p.pa,sh,sa) : -1); };
+  if(scored) picks.sort(function(a,b){ return (ptOf(b)-ptOf(a))||a.name.localeCompare(b.name); });
+  else picks.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  const rows = picks.length ? picks.map(function(p){
+    let badge='·', win='';
+    if(scored){ const pp=ptOf(p); badge=(pp===8?'🔥 8':(pp===3?'✅ 3':'0'))+(done?'':'*'); win=pp>0?'win':''; }
+    return '<div class="porow '+win+'"><div class="pn">'+pavatar(p.name,24)+p.name+'</div>'+
+      '<div class="pp">'+p.ph+'–'+p.pa+'</div><div class="pb">'+badge+'</div></div>';
+  }).join('') : '<div class="porow"><div class="pn" style="color:var(--muted);font-weight:600">No one predicted this one 🤷</div><div></div><div></div></div>';
+  let foot='';
+  if(done){ const ex=picks.filter(function(p){return p.pts===8;}).map(function(p){return p.name;}); if(ex.length) foot='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
+  else if(liveScored){ foot='<div class="poexact">🔴 Live points — they update as the score changes and lock at full time. (* = provisional)</div>'; }
+  return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+scoreHtml+'</span>'+m.a+' '+flag(m.a)+'</div>'+statHtml+'</div>'+rows+foot+'</div>';
+}
+let poDate=null;
 function renderPickoff(){
   const now=Date.now();
-  const started = DATA.matches.filter(m=>matchStart(m)<=now && m.h!=='TBD').sort((a,b)=>matchStart(b)-matchStart(a)).slice(0,24);
+  const started = DATA.matches.filter(m=>matchStart(m)<=now && m.h!=='TBD');
   const box=document.getElementById('pickoffBox');
   if(!started.length){ box.innerHTML='<div class="note">⏳ No games have kicked off yet — every prediction stays sealed until its match starts.</div>'; return; }
-  box.innerHTML = started.map(function(m){
-    const done=m.ah!=null;
-    const lv=LIVE[m.n];
-    const hasLive = !done && lv && (lv.state==='in'||lv.state==='post') && lv.h!=null && !isNaN(lv.h);
-    let sh, sa, scoreHtml, statHtml, scored;
-    if(done){ sh=m.ah; sa=m.aa; scoreHtml=m.ah+'–'+m.aa; statHtml='<span class="postat ft">FULL TIME</span>'; scored=true; }
-    else if(hasLive){ sh=lv.h; sa=lv.a; scoreHtml=lv.h+'–'+lv.a; scored=true;
-      statHtml = lv.state==='post' ? '<span class="postat ft">FULL TIME</span>'
-               : '<span class="postat live">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'; }
-    else { scoreHtml='vs'; statHtml='<span class="postat live">🔴 IN PLAY</span>'; scored=false; }
-    const liveScored = hasLive && lv.state!=='post';
-    let picks=DATA.standings.map(function(p){const pk=p.picks.find(function(k){return k.n===m.n;}); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts}:null;}).filter(Boolean);
-    const ptOf = function(p){ return done ? (p.pts||0) : (scored ? provPts(p.ph,p.pa,sh,sa) : -1); };
-    if(scored) picks.sort(function(a,b){ return (ptOf(b)-ptOf(a))||a.name.localeCompare(b.name); });
-    else picks.sort(function(a,b){ return a.name.localeCompare(b.name); });
-    const rows = picks.length ? picks.map(function(p){
-      let badge='·', win='';
-      if(scored){ const pp=ptOf(p); badge=(pp===8?'🔥 8':(pp===3?'✅ 3':'0'))+(done?'':'*'); win=pp>0?'win':''; }
-      return '<div class="porow '+win+'"><div class="pn">'+pavatar(p.name,24)+p.name+'</div>'+
-        '<div class="pp">'+p.ph+'–'+p.pa+'</div><div class="pb">'+badge+'</div></div>';
-    }).join('') : '<div class="porow"><div class="pn" style="color:var(--muted);font-weight:600">No one predicted this one 🤷</div><div></div><div></div></div>';
-    let foot='';
-    if(done){ const ex=picks.filter(function(p){return p.pts===8;}).map(function(p){return p.name;}); if(ex.length) foot='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
-    else if(liveScored){ foot='<div class="poexact">🔴 Live points — they update as the score changes and lock at full time. (* = provisional)</div>'; }
-    return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+scoreHtml+'</span>'+m.a+' '+flag(m.a)+'</div>'+statHtml+'</div>'+rows+foot+'</div>';
-  }).join('');
+  // Live / awaiting-final games stay pinned at the top, newest first.
+  const live = started.filter(m=>m.ah==null).sort((a,b)=>matchStart(b)-matchStart(a));
+  // Completed games (final score in) go below, grouped by date with scrollable tabs.
+  const doneGames = started.filter(m=>m.ah!=null);
+  let html = live.length
+    ? live.map(pocardHtml).join('')
+    : '<div class="note">⏳ No games are live right now — check back at the next kickoff!</div>';
+  if(doneGames.length){
+    const dates=[...new Set(doneGames.map(m=>m.date))].sort();
+    if(poDate==null || !dates.includes(poDate)) poDate=dates[dates.length-1];
+    html += '<h3 style="font-size:16px;font-weight:900;margin:24px 0 8px">📋 Completed Games</h3>';
+    html += '<p class="lead" style="margin-bottom:8px">Browse past match-ups by date to see who nailed it.</p>';
+    html += '<div class="chips" id="poChips">'+dates.map(d=>'<div class="c '+(d===poDate?'on':'')+'" data-d="'+d+'">'+fmtD(d)+'</div>').join('')+'</div>';
+    const dayCards=doneGames.filter(m=>m.date===poDate).sort((a,b)=>matchStart(b)-matchStart(a));
+    html += dayCards.map(pocardHtml).join('');
+  }
+  box.innerHTML=html;
+  const chips=document.getElementById('poChips');
+  if(chips){
+    chips.querySelectorAll('.c').forEach(c=>c.onclick=()=>{poDate=c.dataset.d;renderPickoff();});
+    // Horizontal-only scroll to reveal the active tab — never moves the page vertically.
+    const on=chips.querySelector('.c.on');
+    if(on) chips.scrollLeft = on.offsetLeft - chips.clientWidth/2 + on.offsetWidth/2;
+  }
 }
 renderPickoff();
 fetchLive();
