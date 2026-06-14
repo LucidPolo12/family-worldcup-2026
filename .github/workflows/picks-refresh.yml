@@ -1,8 +1,18 @@
 name: Picks refresh (fast)
 
 # Lightweight: just pulls family picks from the Google Sheet and rebuilds the site
-# data. No odds/scores API calls, so it can run often. Runs every ~5 minutes.
+# data. No odds/scores API calls, so it can run often.
+#
+# Triggers, in order of importance:
+#   - repository_dispatch (type: picks-submitted): fired by the Google Apps Script
+#     the instant someone submits a pick -> picks go live in ~30-60s. This is the
+#     primary path.
+#   - schedule: a safety-net backup in case a dispatch is ever missed. GitHub
+#     throttles cron heavily, so this is best-effort only, not the main mechanism.
+#   - workflow_dispatch: manual "Run workflow" button.
 on:
+  repository_dispatch:
+    types: [picks-submitted]
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch: {}
