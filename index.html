@@ -218,6 +218,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
       <span><i class="gdot" style="background:#f4a900"></i> 3rd — in the hunt</span>
       <span>MP=played · GD=goal diff · PTS=points</span>
     </div>
+    <div class="chips" id="groupChips"></div>
     <div class="gwrap" id="groupsWrap"></div>
     <h3 style="font-size:16px;font-weight:900;margin:24px 0 4px">🥉 Best Third-Place Race</h3>
     <p class="lead" style="margin-bottom:10px">The top 8 of the twelve 3rd-place teams grab the final knockout spots.</p>
@@ -509,9 +510,12 @@ function rankGroup(teams){
   return out;
 }
 function sgn(n){ return (n>0?'+':'')+n; }
+let gFilter=null;
 function renderGroups(){
   const G=gpStats(); const groups=Object.keys(G).sort(); const thirds=[];
-  document.getElementById('groupsWrap').innerHTML = groups.map(g=>{
+  if(gFilter==null || !groups.includes(gFilter)) gFilter=groups[0];
+  const cards={};
+  groups.forEach(g=>{
     const ranked=rankGroup(Object.values(G[g]));
     if(ranked[2]) thirds.push(Object.assign({grp:g}, ranked[2]));
     const rows=ranked.map((t,i)=>{
@@ -521,10 +525,15 @@ function renderGroups(){
         '<td>'+t.mp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td>'+
         '<td>'+t.gf+'</td><td>'+t.ga+'</td><td>'+sgn(t.gd)+'</td><td class="pts">'+t.pts+'</td></tr>';
     }).join('');
-    return '<div class="gcard"><h3>Group '+g+'</h3><table class="gt">'+
+    cards[g]='<div class="gcard"><h3>Group '+g+'</h3><table class="gt">'+
       '<tr><th class="pos"></th><th class="tl">Team</th><th>MP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr>'+
       rows+'</table></div>';
-  }).join('');
+  });
+  document.getElementById('groupChips').innerHTML = groups.map(g=>'<div class="c '+(g===gFilter?'on':'')+'" data-g="'+g+'">Group '+g+'</div>').join('');
+  const gc=document.getElementById('groupChips');
+  gc.querySelectorAll('.c').forEach(c=>c.onclick=()=>{gFilter=c.dataset.g;renderGroups();});
+  const gon=gc.querySelector('.c.on'); if(gon) gc.scrollLeft=gon.offsetLeft-gc.clientWidth/2+gon.offsetWidth/2;
+  document.getElementById('groupsWrap').innerHTML = cards[gFilter]||'';
   thirds.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.team.localeCompare(b.team));
   const anyPlayed=DATA.matches.some(m=>m.stage==='Group Stage' && m.ah!=null);
   document.getElementById('thirdsBox').innerHTML = !anyPlayed
