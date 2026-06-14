@@ -63,8 +63,8 @@ function doPost(e) {
 function triggerPublish_() {
   try {
     var token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
-    if (!token) return;  // not configured yet — fall back to the scheduled refresh
-    UrlFetchApp.fetch('https://api.github.com/repos/' + GITHUB_REPO + '/dispatches', {
+    if (!token) { Logger.log('triggerPublish_: no GITHUB_TOKEN script property set'); return; }
+    var resp = UrlFetchApp.fetch('https://api.github.com/repos/' + GITHUB_REPO + '/dispatches', {
       method: 'post',
       contentType: 'application/json',
       headers: {
@@ -75,8 +75,10 @@ function triggerPublish_() {
       payload: JSON.stringify({ event_type: DISPATCH_EVENT }),
       muteHttpExceptions: true
     });
+    // 204 = success (event accepted). Anything else is logged for debugging.
+    Logger.log('triggerPublish_: GitHub responded ' + resp.getResponseCode() + ' ' + resp.getContentText());
   } catch (err) {
-    // ignore — the pick is already saved; the scheduled job will publish it
+    Logger.log('triggerPublish_ error: ' + err);
   }
 }
 
