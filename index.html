@@ -609,7 +609,7 @@ function pocardHtml(m){
   else if(liveScored){ foot='<div class="poexact">🔴 Live points — they update as the score changes and lock at full time. (* = provisional)</div>'; }
   return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+scoreHtml+'</span>'+m.a+' '+flag(m.a)+'</div>'+statHtml+'</div>'+rows+foot+'</div>';
 }
-let poDate=null;
+let poDate=null, poUserPicked=false;
 function renderPickoff(){
   const now=Date.now();
   const started = DATA.matches.filter(m=>matchStart(m)<=now && m.h!=='TBD');
@@ -624,7 +624,8 @@ function renderPickoff(){
     : '<div class="note">⏳ No games are live right now — check back at the next kickoff!</div>';
   if(doneGames.length){
     const dates=[...new Set(doneGames.map(m=>m.date))].sort(); // oldest → newest, left to right
-    if(poDate==null || !dates.includes(poDate)) poDate=dates[dates.length-1]; // default to most recent
+    // Default to the most recent date until the user picks a tab (re-applies when fresh data adds newer days).
+    if(!poUserPicked || poDate==null || !dates.includes(poDate)) poDate=dates[dates.length-1];
     html += '<h3 style="font-size:16px;font-weight:900;margin:24px 0 8px">📋 Completed Games</h3>';
     html += '<p class="lead" style="margin-bottom:8px">Browse past match-ups by date to see who nailed it.</p>';
     html += '<div class="chips" id="poChips">'+dates.map(d=>'<div class="c '+(d===poDate?'on':'')+'" data-d="'+d+'">'+fmtD(d)+'</div>').join('')+'</div>';
@@ -634,7 +635,7 @@ function renderPickoff(){
   box.innerHTML=html;
   const chips=document.getElementById('poChips');
   if(chips){
-    chips.querySelectorAll('.c').forEach(c=>c.onclick=()=>{poDate=c.dataset.d;renderPickoff();});
+    chips.querySelectorAll('.c').forEach(c=>c.onclick=()=>{poDate=c.dataset.d;poUserPicked=true;renderPickoff();});
     // Horizontal-only scroll to reveal the active tab — never moves the page vertically.
     const on=chips.querySelector('.c.on');
     if(on) chips.scrollLeft = on.offsetLeft - chips.clientWidth/2 + on.offsetWidth/2;
