@@ -534,25 +534,32 @@ function strip(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowe
 const ELIAS_CANON = {}; Object.keys(ELIAS).forEach(k=>{ ELIAS_CANON[strip(k)] = strip(ELIAS[k]); });
 function canon(s){ const st=strip(s); return ELIAS_CANON[st]||st; }
 let MATCH_BY_PAIR = null;
+function ymd(t){ const d=new Date(t); return ''+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'); }
 function fetchLive(){
-  fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard',{cache:'no-store'})
-    .then(r=>r.ok?r.json():null).then(d=>{
-      if(!d||!d.events) return;
-      if(!MATCH_BY_PAIR){ MATCH_BY_PAIR={}; DATA.matches.forEach(m=>{
-        MATCH_BY_PAIR[canon(m.h)+'|'+canon(m.a)]={n:m.n,rev:false};
-        MATCH_BY_PAIR[canon(m.a)+'|'+canon(m.h)]={n:m.n,rev:true};   // tolerate swapped home/away
-      }); }
+  if(!MATCH_BY_PAIR){ MATCH_BY_PAIR={}; DATA.matches.forEach(m=>{
+    MATCH_BY_PAIR[canon(m.h)+'|'+canon(m.a)]={n:m.n,rev:false};
+    MATCH_BY_PAIR[canon(m.a)+'|'+canon(m.h)]={n:m.n,rev:true};   // tolerate swapped home/away
+  }); }
+  const root='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+  const now=Date.now();
+  // fetch yesterday/today/tomorrow so games crossing midnight (e.g. 12 AM ET) are always covered
+  const urls=[-1,0,1].map(o=>root+'?dates='+ymd(now+o*86400000));
+  const rank={pre:0,in:1,post:2};
+  Promise.all(urls.map(u=>fetch(u,{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null)))
+    .then(results=>{
       const next={};
-      d.events.forEach(ev=>{ try{
+      results.forEach(d=>{ if(!d||!d.events) return; d.events.forEach(ev=>{ try{
         const cs=ev.competitions[0].competitors;
         const H=cs.find(c=>c.homeAway==='home'), A=cs.find(c=>c.homeAway==='away');
         const hit=MATCH_BY_PAIR[canon(H.team.displayName)+'|'+canon(A.team.displayName)];
         if(!hit) return;
         const st=(ev.status&&ev.status.type)?ev.status.type.state:'';
         let hs=parseInt(H.score,10), as=parseInt(A.score,10);
-        if(hit.rev){ const t=hs; hs=as; as=t; }   // ESPN had teams in opposite order
+        if(hit.rev){ const t=hs; hs=as; as=t; }
+        const cur=next[hit.n];
+        if(cur && (rank[cur.state]||0) >= (rank[st]||0)) return;  // keep the most-advanced state if duplicated
         next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||''};
-      }catch(e){} });
+      }catch(e){} }); });
       LIVE=next; renderPickoff();
     }).catch(()=>{});
 }
