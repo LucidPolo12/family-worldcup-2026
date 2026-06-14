@@ -1,60 +1,46 @@
-# Auto-Publish Setup — GitHub + Netlify
+# Hosting & Auto-Publish — GitHub + Cloudflare Pages
 
-Goal: change a result or pick → it appears on the live site automatically, no manual upload.
+**Live site:** https://family-worldcup-2026.pages.dev
+**Host:** Cloudflare Pages (free, unlimited). *Netlify is retired — the old
+`familyworldcupchallenge2026.netlify.app` URL is dead; don't use it.*
 
-How it works: the site reads **`data.json`** on load. The script `regenerate_data.py` rebuilds
-`data.json` from `FamilyWorldCup2026.xlsx`. GitHub stores the files; Netlify watches GitHub and
-re-publishes the moment anything is pushed. So the loop becomes: **update spreadsheet → regenerate →
-push → live**.
-
----
-
-## One-time setup (≈15 min)
-
-### 1. Create a GitHub repo (private)
-- Go to github.com → New repository.
-- Name it e.g. `family-worldcup-2026`. Choose **Private** (keeps the spreadsheet out of public view).
-- Create it (no README needed).
-
-### 2. Push this folder to the repo
-From this folder in a terminal:
-```
-git init
-git add .
-git commit -m "Family World Cup portal"
-git branch -M main
-git remote add origin https://github.com/<your-username>/family-worldcup-2026.git
-git push -u origin main
-```
-(If git asks you to sign in, use your GitHub account / a personal access token.)
-
-### 3. Connect Netlify to the repo
-- Netlify → **Add new site → Import an existing project → GitHub** → pick the repo.
-- **Build command:** leave blank. **Publish directory:** `.` (the repo root).
-- Deploy. Netlify gives you a URL; you can keep your existing
-  `familyworldcupchallenge2026.netlify.app` name (Site settings → Domain).
-
-That's it — pushes to `main` now auto-publish.
+How it works: Cloudflare Pages is linked to the GitHub repo **family-worldcup-2026**
+(account LucidPolo12) and **auto-deploys branch `main` on every push** — build command
+blank, output directory root. The page reads **`data.json`** on load for live data
+(standings, results, odds, photos); the inline data in `index.html` is just an offline fallback.
 
 ---
 
-## The update loop (every time results/picks change)
-```
-python3 regenerate_data.py          # rebuilds data.json from the spreadsheet
-git add data.json FamilyWorldCup2026.xlsx
-git commit -m "Update results"
-git push
-```
-Netlify republishes in ~30–60s. No more dragging folders.
+## The automatic pipeline (hands-off)
+Two GitHub Actions keep everything current and publish themselves:
 
-## Optional: make the daily task push automatically
-Once the repo exists, the daily scoring task can run `regenerate_data.py` and `git push`
-on its own using a stored GitHub token — ask Claude to wire this up and it becomes fully
-hands-off. (Until then, the one `git push` above is the only manual step.)
+- **Daily World Cup update** (`daily.yml`) — ~8am/1pm/6pm CT: records finished group-stage
+  scores (`update_scores.py` → `results.json`), rebuilds `data.json` (`regenerate_data.py`),
+  refreshes win/draw/win odds (`fetch_odds.py`), commits & pushes.
+- **Picks refresh (fast)** (`picks-refresh.yml`) — every ~5 min: pulls family picks from the
+  Google Sheet (`fetch_picks.py` → `picks.json`), rebuilds `data.json`, commits & pushes.
+
+Every push triggers a Cloudflare deploy, so results, standings, group tables, odds and
+submitted picks all appear on the live site by themselves.
+
+Secrets live in GitHub (repo → Settings → Secrets and variables → Actions): `ODDS_API_KEY`
+and `PICKS_CSV_URL`. They are encrypted, never in the code.
+
+## Manual touches (the only things done by hand)
+- **Knockout-round results:** enter by hand (our scoring uses regulation time only).
+  Put the score in the spreadsheet's G/H columns (or `results.json`), run
+  `python regenerate_data.py`, then commit & push.
+- **Changing picks for the family:** they self-serve in the app; the spreadsheet stays a
+  manual override/baseline if ever needed.
+
+## Update loop, if you ever edit by hand
+```
+python regenerate_data.py        # rebuild data.json from the spreadsheet + results.json + picks.json
+```
+Then in GitHub Desktop: **Fetch/Pull** (catch the bots' commits) → **Commit** → **Push origin**.
+Cloudflare republishes in ~30–60s.
 
 ## Notes
-- `data.json` is the live data; the big inline block in `index.html` is just an offline fallback.
-- Opening `index.html` directly as a file still works (uses the fallback); the `data.json`
-  refresh only kicks in when served over http (local server or Netlify).
-- Keep the repo **private** so the spreadsheet isn't publicly browsable. The published site is
-  still public, which is fine — it only exposes the same scores everyone already sees.
+- Opening `index.html` directly as a file still works (uses the offline fallback); the
+  `data.json` refresh only kicks in when served over http (local server or Cloudflare).
+- Keep the repo's secrets in GitHub Actions only — never paste keys into the code.
