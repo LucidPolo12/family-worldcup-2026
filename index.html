@@ -586,7 +586,7 @@ function fetchLive(){
         if(cur && (rank[cur.state]||0) >= (rank[st]||0)) return;  // keep the most-advanced state if duplicated
         next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||''};
       }catch(e){} }); });
-      LIVE=next; renderPickoff();
+      LIVE=next; renderPickoff(); renderMatches(); renderToday();
     }).catch(()=>{});
 }
 function provPts(ph,pa,ah,aa){ if(ph==null||pa==null||ah==null||aa==null) return 0;
@@ -624,10 +624,12 @@ function renderPickoff(){
   const started = DATA.matches.filter(m=>matchStart(m)<=now && m.h!=='TBD');
   const box=document.getElementById('pickoffBox');
   if(!started.length){ box.innerHTML='<div class="note">⏳ No games have kicked off yet — every prediction stays sealed until its match starts.</div>'; return; }
-  // Live / awaiting-final games stay pinned at the top, newest first.
-  const live = started.filter(m=>m.ah==null).sort((a,b)=>matchStart(b)-matchStart(a));
-  // Completed games (final score in) go below, grouped by date with scrollable tabs.
-  const doneGames = started.filter(m=>m.ah!=null);
+  // A game is "finished" once the final score is entered OR the live feed says it's full time.
+  const finished = m => m.ah!=null || (LIVE[m.n] && LIVE[m.n].state==='post');
+  // Only truly in-play games stay pinned at the top, newest first.
+  const live = started.filter(m=>!finished(m)).sort((a,b)=>matchStart(b)-matchStart(a));
+  // Finished games go below, grouped by date with scrollable tabs.
+  const doneGames = started.filter(finished);
   let html = live.length
     ? live.map(pocardHtml).join('')
     : '<div class="note">⏳ No games are live right now — check back at the next kickoff!</div>';
@@ -694,13 +696,21 @@ function renderMatches(){
   const items=DATA.matches.filter(m=>m.date===mf);
   document.getElementById('matchList').innerHTML=items.map(m=>{
     const done=m.ah!=null;
+    const lv=LIVE[m.n];
+    const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
     const stage=isKnk(m)?m.stage:('Group '+(m.grp||''));
+    const scoreCell = done ? '<span class="v">'+m.ah+'–'+m.aa+'</span>'
+      : hasLive ? '<span class="v">'+lv.h+'–'+lv.a+'</span>'
+      : '<span class="v tbd">vs</span>';
+    const statusR = done ? '' : hasLive
+      ? (lv.state==='post' ? ' · ✅ Full time' : ' · 🔴 LIVE'+(lv.clock?(' '+lv.clock):''))
+      : (KO[m.n]?' · '+koLocal(m.n,m.date):'');
     return '<div class="match '+(isKnk(m)?'knk':'')+'">'+
       '<div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
-      '<div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div>'+
+      '<div class="sc">'+scoreCell+'</div>'+
       '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
-      '<div class="mt"><span>Match '+m.n+' · '+stage+'</span><span>'+fmtD(m.date)+(KO[m.n]?' · '+koLocal(m.n,m.date):'')+'</span></div>'+
-      (m.ah==null?renderProbBar(m):'')+
+      '<div class="mt"><span>Match '+m.n+' · '+stage+'</span><span>'+fmtD(m.date)+statusR+'</span></div>'+
+      ((!done && !hasLive)?renderProbBar(m):'')+
     '</div>';
   }).join('');
 }
