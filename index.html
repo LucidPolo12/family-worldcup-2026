@@ -623,8 +623,8 @@ function renderPickoff(){
     ? live.map(pocardHtml).join('')
     : '<div class="note">⏳ No games are live right now — check back at the next kickoff!</div>';
   if(doneGames.length){
-    const dates=[...new Set(doneGames.map(m=>m.date))].sort();
-    if(poDate==null || !dates.includes(poDate)) poDate=dates[dates.length-1];
+    const dates=[...new Set(doneGames.map(m=>m.date))].sort().reverse(); // most recent first
+    if(poDate==null || !dates.includes(poDate)) poDate=dates[0];
     html += '<h3 style="font-size:16px;font-weight:900;margin:24px 0 8px">📋 Completed Games</h3>';
     html += '<p class="lead" style="margin-bottom:8px">Browse past match-ups by date to see who nailed it.</p>';
     html += '<div class="chips" id="poChips">'+dates.map(d=>'<div class="c '+(d===poDate?'on':'')+'" data-d="'+d+'">'+fmtD(d)+'</div>').join('')+'</div>';
