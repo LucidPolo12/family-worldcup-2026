@@ -18,7 +18,8 @@ PCOLS = [("Ewan","I","J"),("Nana","L","M"),("Emrys","O","P"),("Nonno","R","S"),
 CHAMPS = {"Ewan":"Spain","Nana":"France","Nonno":"Brazil","Boompa":"France"}
 PHOTOS = {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg",
           "Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg",
-          "Boompa":"boompa-bobblehead.jpg","Autumn":"autumn-bobblehead.jpg"}
+          "Boompa":"boompa-bobblehead.jpg","Autumn":"autumn-bobblehead.jpg",
+          "River":"river-bobblehead.jpg"}
 
 def compute_ranks(standings):
     """Rank purely by points (ties share a rank), matching the front-end logic."""
