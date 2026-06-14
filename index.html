@@ -524,26 +524,34 @@ renderGroups();
 
 // ---- Live in-play scores (free ESPN scoreboard feed, client-side) ----
 let LIVE = {};   // match number -> {h, a, state:'in'|'post'|'pre', clock}
+// Names from different teams/spellings (e.g. Türkiye/Turkey, USA/United States).
 const ELIAS = {"United States":"USA","Korea Republic":"South Korea","Turkey":"Türkiye",
   "Czech Republic":"Czechia","Côte d'Ivoire":"Ivory Coast","IR Iran":"Iran",
   "Bosnia & Herzegovina":"Bosnia and Herzegovina","Cabo Verde":"Cape Verde",
-  "Curacao":"Curaçao","Congo DR":"DR Congo"};
-const enorm = s => { s=(s||'').trim(); return ELIAS[s]||s; };
+  "Congo DR":"DR Congo"};
+// strip accents + punctuation + case so "Türkiye" = "Turkiye" = "turkey"(via alias) etc.
+function strip(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+const ELIAS_CANON = {}; Object.keys(ELIAS).forEach(k=>{ ELIAS_CANON[strip(k)] = strip(ELIAS[k]); });
+function canon(s){ const st=strip(s); return ELIAS_CANON[st]||st; }
 let MATCH_BY_PAIR = null;
 function fetchLive(){
   fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard',{cache:'no-store'})
     .then(r=>r.ok?r.json():null).then(d=>{
       if(!d||!d.events) return;
-      if(!MATCH_BY_PAIR){ MATCH_BY_PAIR={}; DATA.matches.forEach(m=>{ MATCH_BY_PAIR[m.h+'|'+m.a]=m.n; }); }
+      if(!MATCH_BY_PAIR){ MATCH_BY_PAIR={}; DATA.matches.forEach(m=>{
+        MATCH_BY_PAIR[canon(m.h)+'|'+canon(m.a)]={n:m.n,rev:false};
+        MATCH_BY_PAIR[canon(m.a)+'|'+canon(m.h)]={n:m.n,rev:true};   // tolerate swapped home/away
+      }); }
       const next={};
       d.events.forEach(ev=>{ try{
         const cs=ev.competitions[0].competitors;
         const H=cs.find(c=>c.homeAway==='home'), A=cs.find(c=>c.homeAway==='away');
-        const n=MATCH_BY_PAIR[enorm(H.team.displayName)+'|'+enorm(A.team.displayName)];
-        if(!n) return;
+        const hit=MATCH_BY_PAIR[canon(H.team.displayName)+'|'+canon(A.team.displayName)];
+        if(!hit) return;
         const st=(ev.status&&ev.status.type)?ev.status.type.state:'';
-        next[n]={h:parseInt(H.score,10), a:parseInt(A.score,10), state:st,
-                 clock:(ev.status&&ev.status.displayClock)||''};
+        let hs=parseInt(H.score,10), as=parseInt(A.score,10);
+        if(hit.rev){ const t=hs; hs=as; as=t; }   // ESPN had teams in opposite order
+        next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||''};
       }catch(e){} });
       LIVE=next; renderPickoff();
     }).catch(()=>{});
