@@ -182,13 +182,13 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <section class="sec" id="badges">
     <h2>🎖️ Family Badges</h2>
     <p class="lead">Bragging rights, automatically tracked.</p>
-    <div class="badges" id="badges"></div>
+    <div class="badges" id="badgeGrid"></div>
   </section>
 
   <section class="sec" id="players">
     <h2>👥 Our Picks</h2>
     <p class="lead">Tap a family member to see how their predictions are doing.</p>
-    <div class="players" id="players"></div>
+    <div class="players" id="playerGrid"></div>
   </section>
 
   <section class="sec" id="fancam">
@@ -357,7 +357,37 @@ function tickCountdown(){
 }
 tickCountdown(); setInterval(tickCountdown,30000);
 
+// Latest known final scores: official results in DATA.matches, plus any game
+// ESPN has flagged Full Time (LIVE 'post') that hasn't been entered officially yet.
+function liveResults(){
+  const R={};
+  DATA.matches.forEach(function(m){ if(m.ah!=null) R[m.n]=[m.ah,m.aa]; });
+  Object.keys(LIVE||{}).forEach(function(n){ const lv=LIVE[n];
+    if(lv && lv.state==='post' && lv.h!=null && !isNaN(lv.h) && R[n]==null) R[n]=[lv.h,lv.a]; });
+  return R;
+}
+// Recompute each player's match points from those results so the leaderboard
+// updates the moment a game ends — no waiting for the morning data push. The
+// spreadsheet stays authoritative: once official scores land in data.json they
+// overwrite the live ones. NOTE: knockout games are scored at end of regulation;
+// a live 'post' score may include extra time/penalties until the official
+// regulation score is entered, which then takes precedence.
+function syncStandingsFromResults(){
+  if(!DATA.standings) return;
+  const R=liveResults();
+  DATA.standings.forEach(function(p){
+    let mp=0,ex=0,co=0;
+    (p.picks||[]).forEach(function(pk){
+      if(R[pk.n] && pk.ph!=null && pk.pa!=null){
+        const pts=provPts(pk.ph,pk.pa,R[pk.n][0],R[pk.n][1]);
+        pk.pts=pts; mp+=pts; if(pts===8) ex++; if(pts>=3) co++;
+      } else { pk.pts=null; }
+    });
+    p.matchPts=mp; p.exact=ex; p.correct=co;
+  });
+}
 function rankStandings(){
+  syncStandingsFromResults();
   const s = DATA.standings.map(x=>({...x, total:x.matchPts}));
   s.sort((a,b)=> b.total-a.total || b.exact-a.exact || b.correct-a.correct || a.name.localeCompare(b.name));
   let rank=1;
@@ -392,10 +422,21 @@ function renderLB(){
 }
 renderLB();
 
+// Which match-day to show. Rolls to the next day at 8:00 AM local time, so
+// late-finishing games stay on screen overnight and the slate flips the next
+// morning — independent of when the data pipeline last ran.
+function tournamentDay(){
+  const d = new Date();
+  if(d.getHours() < 8) d.setDate(d.getDate() - 1);
+  const p = x => String(x).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
 function renderToday(){
-  const today = DATA.generated;
+  const today = tournamentDay();
   const games = DATA.matches.filter(m=>m.date===today);
-  if(!games.length){ document.getElementById('today').style.display='none'; return; }
+  const todaySec = document.getElementById('today');
+  if(!games.length){ todaySec.style.display='none'; return; }
+  todaySec.style.display='';
   document.getElementById('todayLead').textContent =
     fmtD(today)+' — '+games.length+' game'+(games.length>1?'s':'')+' on the slate. Get your picks in before kickoff!';
   document.getElementById('todayList').innerHTML = games.map(m=>{
@@ -449,7 +490,7 @@ function renderBadges(){
     {ic:'✍️',ti:'Most Predictions', name: mostPicks.picks.length>0?mostPicks.name:null, who: mostPicks.picks.length>0? mostPicks.name+' ('+mostPicks.picks.length+')' : '—'},
     {ic:'🇭🇷',ti:'Champions Locked', name:null, who: champs+' of '+s.length+' picked'},
   ];
-  document.getElementById('badges').innerHTML = badges.map(b=>
+  document.getElementById('badgeGrid').innerHTML = badges.map(b=>
     '<div class="badge"><div class="ic">'+b.ic+'</div><div class="ti">'+b.ti+'</div><div class="who">'+(b.name?pavatar(b.name,22):'')+b.who+'</div></div>'
   ).join('');
 }
@@ -457,7 +498,7 @@ renderBadges();
 
 function renderPlayers(){
   const s = rankStandings();
-  document.getElementById('players').innerHTML = s.map(x=>{
+  document.getElementById('playerGrid').innerHTML = s.map(x=>{
     const av = pavatar(x.name,30);
     return '<div class="pl" data-n="'+x.name+'"><div class="h"><span class="nm">'+av+x.name+'</span><span class="pt">'+x.total+' pts</span></div>'+
     '<div class="sm">'+x.picks.length+' picks · '+x.exact+' exact · rank #'+x.rank+'</div>'+
@@ -619,7 +660,7 @@ function fetchLive(){
         if(cur && (rank[cur.state]||0) >= (rank[st]||0)) return;  // keep the most-advanced state if duplicated
         next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||''};
       }catch(e){} }); });
-      LIVE=next; renderPickoff(); renderMatches(); renderToday();
+      LIVE=next; renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers();
     }).catch(()=>{});
 }
 function provPts(ph,pa,ah,aa){ if(ph==null||pa==null||ah==null||aa==null) return 0;
@@ -841,7 +882,11 @@ function applyData(d){
   if(d.results){ DATA.matches.forEach(function(m){ var r=d.results[m.n]||d.results[String(m.n)]; if(r){ m.ah=r[0]; m.aa=r[1]; } }); }
   reRenderAll();
 }
-fetch('data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(applyData).catch(function(){});
+function loadData(){ fetch('data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(applyData).catch(function(){}); }
+loadData();
+// Re-pull the published data every 60s so newly submitted picks and freshly
+// entered results show up without anyone needing to reload the page.
+setInterval(loadData, 60000);
 </script>
 </body>
 </html>
