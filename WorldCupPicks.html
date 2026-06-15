@@ -67,7 +67,7 @@
 <body>
 <header>
   <h1>🏆 Family World Cup 2026</h1>
-  <p>Tap the scores for each game, or use the <b>🏆 Champion &amp; Podium</b> tab to call the final four. Then hit <b>Submit</b> and send to Marco!</p>
+  <p>Tap the scores for each game, or use the <b>🏆 Champion &amp; Podium</b> tab to call the final four. Then hit <b>Submit</b> to enter your pick.</p>
 </header>
 <div class="wrap">
   <div class="namebox">
@@ -311,7 +311,7 @@ function renderPodium(){
   html+=podRow('third','3rd place'+podNote,'🥉',podiumDisabled,'');
   html+=podRow('fourth','4th place'+podNote,'🏅',podiumDisabled,'');
   html+='<div class="podiumNote">A team can only finish in one spot, and you only score points for the <b>exact</b> finishing place. '+(champLocked?'These picks are now locked. ':'')+'</div>';
-  if(!champLocked) html+='<button class="btn" id="podiumSubmit" style="width:100%">Save &amp; send picks ✅</button>';
+  if(!champLocked) html+='<button class="btn" id="podiumSubmit" style="width:100%">Submit ✅</button>';
   panelPodium.innerHTML=html;
   panelPodium.querySelectorAll("select[data-key]").forEach(sel=>sel.onchange=()=>{ state.final4[sel.dataset.key]=sel.value; save(); renderPodium(); });
   const ps=document.getElementById("podiumSubmit"); if(ps) ps.onclick=submitPodium;
