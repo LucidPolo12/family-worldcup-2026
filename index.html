@@ -663,7 +663,7 @@ function fetchLive(){
         if(cur && (rank[cur.state]||0) >= (rank[st]||0)) return;  // keep the most-advanced state if duplicated
         next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||''};
       }catch(e){} }); });
-      LIVE=next; renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers(); renderGroups();
+      LIVE=next; preserveScroll(function(){ renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers(); renderGroups(); });
     }).catch(()=>{});
 }
 function provPts(ph,pa,ah,aa){ if(ph==null||pa==null||ah==null||aa==null) return 0;
@@ -765,8 +765,11 @@ function fmtD(d){ return new Date(d+'T12:00:00').toLocaleDateString(undefined,{w
 function renderChips(){
   document.getElementById('dateChips').innerHTML = dates.map(d=>'<div class="c '+(d===mf?'on':'')+'" data-d="'+d+'">'+fmtD(d)+'</div>').join('');
   document.querySelectorAll('#dateChips .c').forEach(c=>c.onclick=()=>{mf=c.dataset.d;renderChips();renderMatches();});
-  const on=document.querySelector('#dateChips .c.on');
-  if(on&&on.scrollIntoView) on.scrollIntoView({inline:'center',block:'nearest'});
+  // Center the active chip within its own horizontal strip only — never scroll
+  // the whole page (that used to yank the view on every auto-refresh).
+  const cont=document.getElementById('dateChips');
+  const on=cont.querySelector('.c.on');
+  if(on) cont.scrollLeft = on.offsetLeft - cont.clientWidth/2 + on.offsetWidth/2;
 }
 function isKnk(m){ return m.stage && m.stage.indexOf('Group')<0; }
 function renderMatches(){
@@ -889,7 +892,15 @@ DATA.standings = [{"name": "Ewan", "matchPts": 14, "exact": 1, "correct": 3, "ch
 DATA.photos = Object.assign(DATA.photos||{}, {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg","Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg","Boompa":"boompa-bobblehead.jpg","Autumn":"autumn-bobblehead.jpg","River":"river-bobblehead.jpg","Xavier":"xavier-bobblehead.jpg","Ewan":"ewan-bobblehead.jpg"});
 var RESULTS = {1:[2,0],2:[2,1],3:[1,1],4:[4,1]};
 DATA.matches.forEach(function(m){ if(RESULTS[m.n]){ m.ah=RESULTS[m.n][0]; m.aa=RESULTS[m.n][1]; } });
-function reRenderAll(){ renderLB(); renderBadges(); renderPlayers(); renderFanCam(); renderToday(); renderGroups(); renderPickoff(); renderChips(); renderMatches(); renderBracket(); tickCountdown(); }
+// Run a batch of re-renders without moving the page — auto-refreshes should
+// leave the viewer exactly where they were scrolled.
+function preserveScroll(fn){
+  const y = window.scrollY || window.pageYOffset || 0;
+  fn();
+  window.scrollTo(0, y);
+  requestAnimationFrame(function(){ window.scrollTo(0, y); });
+}
+function reRenderAll(){ preserveScroll(function(){ renderLB(); renderBadges(); renderPlayers(); renderFanCam(); renderToday(); renderGroups(); renderPickoff(); renderChips(); renderMatches(); renderBracket(); tickCountdown(); }); }
 reRenderAll();
 /* Live data source: if data.json is present (when served over http), use it as the
    source of truth and re-render. Falls back silently to the baked-in data above
