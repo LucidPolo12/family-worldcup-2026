@@ -50,12 +50,24 @@
   .match.locked .sbtn{display:none}
   .lockmsg{font-size:11px;color:#b06a00;font-weight:800;white-space:nowrap}
   .lockpill{font-size:10px;font-weight:800;color:#b06a00;background:#fff4e0;border:1px solid #f3dca6;border-radius:999px;padding:1px 7px;margin-left:6px}
+  .tabbar{display:flex;gap:8px;margin-bottom:14px}
+  .tabbtn{flex:1;padding:12px 8px;border:1.5px solid var(--line);background:#fff;border-radius:12px;font-size:14px;font-weight:800;color:var(--muted)}
+  .tabbtn.active{background:var(--green);border-color:var(--green);color:#fff}
+  .pintro{font-size:13px;color:var(--muted);line-height:1.5;margin:0 2px 14px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+  .pcard.lockedrow{opacity:.6;background:#f4f6f8}
+  .pl{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .pl .medal{font-size:18px}
+  .pcard select:disabled{background:#eef1f4;color:#9aa6b2;cursor:not-allowed}
+  .openpill{font-size:10px;font-weight:800;color:#0a7d3c;background:#e7f6ec;border:1px solid #b9e3c6;border-radius:999px;padding:1px 8px}
+  .soonpill{font-size:10px;font-weight:800;color:#b06a00;background:#fff4e0;border:1px solid #f3dca6;border-radius:999px;padding:1px 8px}
+  .podiumNote{font-size:12px;color:var(--muted);line-height:1.5;margin:10px 2px 14px}
 </style>
 </head>
 <body>
 <header>
   <h1>🏆 Family World Cup 2026</h1>
-  <p>Tap the scores you think each game will end. Then hit <b>Generate</b> and send it to Marco. Pick as many or as few as you like!</p>
+  <p>Tap the scores for each game, or use the <b>🏆 Champion &amp; Podium</b> tab to call the final four. Then hit <b>Submit</b> and send to Marco!</p>
 </header>
 <div class="wrap">
   <div class="namebox">
@@ -68,8 +80,15 @@
     </select>
     <input type="text" id="othername" placeholder="Type your name" style="display:none">
   </div>
-  <div class="chips" id="chips"></div>
-  <div id="list"></div>
+  <div class="tabbar">
+    <button class="tabbtn active" id="tabMatches" data-tab="matches">⚽ Match Picks</button>
+    <button class="tabbtn" id="tabPodium" data-tab="podium">🏆 Champion &amp; Podium</button>
+  </div>
+  <div id="panelMatches">
+    <div class="chips" id="chips"></div>
+    <div id="list"></div>
+  </div>
+  <div id="panelPodium" style="display:none"></div>
 </div>
 
 <div class="bar">
@@ -251,9 +270,98 @@ document.getElementById("clearBtn").onclick=()=>{
   if(confirm("Clear all your picks?")){ state.scores={}; save(); renderList(); }
 };
 
-renderChips(); renderList();
-// Re-render every 30s so games lock automatically the moment they kick off.
-setInterval(renderList, 30000);
+// ===== Champion & Podium tab =====
+// 48 tournament teams, pulled straight from the group-stage fixtures.
+const TEAMS = [...new Set(FIX.filter(f=>f.stage==="Group Stage").flatMap(f=>[f.h,f.a]))].sort((a,b)=>a.localeCompare(b));
+if(!state.final4) state.final4 = {champ:"",run:"",third:"",fourth:""};
+// Deadlines (Central Daylight Time, UTC-5 in June).
+const PODIUM_OPEN = new Date("2026-06-28T01:00:00-05:00"); // Runner-up / 3rd / 4th unlock
+const PODIUM_LOCK = new Date("2026-06-28T12:00:00-05:00"); // All four lock for good
+const OPEN_LABEL = "Sun, Jun 28 · 1:00 AM CDT";
+const LOCK_LABEL = "Sun, Jun 28 · 12:00 PM (noon) CDT";
+function podiumPhase(){ const now=Date.now(); if(now>=PODIUM_LOCK.getTime()) return "locked"; if(now>=PODIUM_OPEN.getTime()) return "open"; return "pre"; }
+
+const panelPodium = document.getElementById("panelPodium");
+function teamOptions(selected, exclude){
+  let h='<option value="">— pick a team —</option>';
+  TEAMS.forEach(t=>{ if(exclude.has(t) && t!==selected) return; h+='<option'+(t===selected?' selected':'')+'>'+t+'</option>'; });
+  return h;
+}
+function podRow(key,label,medal,disabled,note){
+  const f4=state.final4;
+  const excl=new Set([f4.champ,f4.run,f4.third,f4.fourth].filter(Boolean)); excl.delete(f4[key]);
+  return '<div class="pcard'+(disabled?' lockedrow':'')+'">'+
+    '<div class="pl"><span class="medal">'+medal+'</span> '+label+(note||'')+'</div>'+
+    '<select data-key="'+key+'"'+(disabled?' disabled':'')+'>'+teamOptions(f4[key],excl)+'</select>'+
+  '</div>';
+}
+function renderPodium(){
+  const phase=podiumPhase();
+  const champLocked = phase==="locked";
+  const podiumDisabled = phase!=="open"; // runner-up/3rd/4th editable only in the open window
+  let podNote;
+  if(phase==="pre") podNote=' <span class="soonpill">Opens '+OPEN_LABEL+'</span>';
+  else if(phase==="open") podNote=' <span class="openpill">OPEN</span>';
+  else podNote=' <span class="soonpill">🔒 LOCKED</span>';
+  const champNote = champLocked ? ' <span class="soonpill">🔒 LOCKED</span>' : ' <span class="openpill">OPEN NOW</span>';
+  let html='';
+  html+='<div class="pintro">Call the <b>final four</b> of the tournament. Your <b>Champion</b> is open to pick and change right now. <b>Runner-up, 3rd &amp; 4th</b> unlock once the Round of 32 bracket is set ('+OPEN_LABEL+') so you can map out a path to the final. All four lock at <b>'+LOCK_LABEL+'</b> — change them as often as you like until then.</div>';
+  html+=podRow('champ','Champion'+champNote,'🥇',champLocked,'');
+  html+=podRow('run','Runner-up'+podNote,'🥈',podiumDisabled,'');
+  html+=podRow('third','3rd place'+podNote,'🥉',podiumDisabled,'');
+  html+=podRow('fourth','4th place'+podNote,'🏅',podiumDisabled,'');
+  html+='<div class="podiumNote">A team can only finish in one spot. '+(champLocked?'These picks are now locked. ':'')+'</div>';
+  if(!champLocked) html+='<button class="btn" id="podiumSubmit" style="width:100%">Save &amp; send picks ✅</button>';
+  panelPodium.innerHTML=html;
+  panelPodium.querySelectorAll("select[data-key]").forEach(sel=>sel.onchange=()=>{ state.final4[sel.dataset.key]=sel.value; save(); renderPodium(); });
+  const ps=document.getElementById("podiumSubmit"); if(ps) ps.onclick=submitPodium;
+}
+function buildPodiumText(){
+  const f4=state.final4, who=state.name||"(no name!)";
+  return ["🏆 Family WC — Final Four — "+who,
+    "🥇 Champion: "+(f4.champ||"—"),
+    "🥈 Runner-up: "+(f4.run||"—"),
+    "🥉 3rd place: "+(f4.third||"—"),
+    "🏅 4th place: "+(f4.fourth||"—")].join("\n");
+}
+function submitPodium(){
+  if(!state.name){ alert("Pick your name at the top first! 😊"); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  const f4=state.final4;
+  if(!f4.champ){ alert("Pick your Champion at least! 🏆"); return; }
+  const vals=[f4.champ,f4.run,f4.third,f4.fourth].filter(Boolean);
+  if(new Set(vals).size!==vals.length){ alert("Each team can only finish in one position — please fix the duplicate picks."); return; }
+  const payload={ name: state.name, type:"final4", final4: f4 };
+  const live = SCRIPT_URL && SCRIPT_URL.indexOf("PASTE_")<0;
+  if(live){ try{ fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(){},function(){}); }catch(e){} }
+  out.value=buildPodiumText();
+  document.getElementById("sheetTitle").textContent="Your final four 🏆";
+  document.getElementById("sheetHint").innerHTML="Tap <b>Copy</b>, then send to Marco / the family chat. You can change these any time until "+LOCK_LABEL+".";
+  modal.classList.add("show");
+}
+
+// ===== Tab switching =====
+const panelMatches=document.getElementById("panelMatches"), barEl=document.querySelector(".bar");
+function setTab(t){
+  const m=(t==="matches");
+  document.getElementById("tabMatches").classList.toggle("active",m);
+  document.getElementById("tabPodium").classList.toggle("active",!m);
+  panelMatches.style.display=m?"":"none";
+  panelPodium.style.display=m?"none":"";
+  barEl.style.display=m?"":"none"; // bottom Submit bar belongs to match picks only
+  if(!m) renderPodium();
+}
+document.getElementById("tabMatches").onclick=()=>setTab("matches");
+document.getElementById("tabPodium").onclick=()=>setTab("podium");
+
+renderChips(); renderList(); setTab("matches");
+// Re-render every 30s so games lock automatically the moment they kick off,
+// and so the podium tab flips open/locked at its deadlines without a refresh.
+let lastPhase=podiumPhase();
+setInterval(function(){
+  renderList();
+  const p=podiumPhase();
+  if(p!==lastPhase){ lastPhase=p; if(panelPodium.style.display!=="none") renderPodium(); }
+}, 30000);
 </script>
 </body>
 </html>
