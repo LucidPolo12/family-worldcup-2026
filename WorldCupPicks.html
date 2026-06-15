@@ -305,12 +305,12 @@ function renderPodium(){
   else podNote=' <span class="soonpill">🔒 LOCKED</span>';
   const champNote = champLocked ? ' <span class="soonpill">🔒 LOCKED</span>' : ' <span class="openpill">OPEN NOW</span>';
   let html='';
-  html+='<div class="pintro">Call the <b>final four</b> of the tournament. Your <b>Champion</b> is open to pick and change right now. <b>Runner-up, 3rd &amp; 4th</b> unlock once the Round of 32 bracket is set ('+OPEN_LABEL+') so you can map out a path to the final. All four lock at <b>'+LOCK_LABEL+'</b> — change them as often as you like until then.</div>';
+  html+='<div class="pintro">Call the <b>final four</b> of the tournament for big bonus points — <b>exact finish only</b>: 🥇 Champion <b>50</b> · 🥈 Runner-up <b>35</b> · 🥉 3rd <b>20</b> · 🏅 4th <b>10</b> (up to 115!). Your <b>Champion</b> is open to pick and change right now. <b>Runner-up, 3rd &amp; 4th</b> unlock once the Round of 32 bracket is set ('+OPEN_LABEL+') so you can map out a path to the final. All four lock at <b>'+LOCK_LABEL+'</b> — change them as often as you like until then.</div>';
   html+=podRow('champ','Champion'+champNote,'🥇',champLocked,'');
   html+=podRow('run','Runner-up'+podNote,'🥈',podiumDisabled,'');
   html+=podRow('third','3rd place'+podNote,'🥉',podiumDisabled,'');
   html+=podRow('fourth','4th place'+podNote,'🏅',podiumDisabled,'');
-  html+='<div class="podiumNote">A team can only finish in one spot. '+(champLocked?'These picks are now locked. ':'')+'</div>';
+  html+='<div class="podiumNote">A team can only finish in one spot, and you only score points for the <b>exact</b> finishing place. '+(champLocked?'These picks are now locked. ':'')+'</div>';
   if(!champLocked) html+='<button class="btn" id="podiumSubmit" style="width:100%">Save &amp; send picks ✅</button>';
   panelPodium.innerHTML=html;
   panelPodium.querySelectorAll("select[data-key]").forEach(sel=>sel.onchange=()=>{ state.final4[sel.dataset.key]=sel.value; save(); renderPodium(); });
