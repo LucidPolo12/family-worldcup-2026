@@ -235,13 +235,13 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <section class="sec" id="facts">
     <h2>💡 World Cup Fun Facts</h2>
     <p class="lead">The 2026 tournament is breaking records left and right.</p>
-    <div class="facts" id="facts"></div>
+    <div class="facts" id="factsBox"></div>
   </section>
 
   <section class="sec" id="news">
     <h2>📰 Latest News</h2>
     <p class="lead">Tap any card for the latest on teams, players and matches.</p>
-    <div class="news" id="news"></div>
+    <div class="news" id="newsBox"></div>
   </section>
 
   <section class="sec" id="winners">
@@ -830,10 +830,10 @@ function renderBracket(){
 }
 renderBracket();
 
-document.getElementById('facts').innerHTML = FACTS.map(f=>
+document.getElementById('factsBox').innerHTML = FACTS.map(f=>
   '<div class="fact"><div class="e">'+f.e+'</div><div class="big">'+f.big+'</div><div class="t">'+f.t+'</div><div class="d">'+f.d+'</div></div>'
 ).join('');
-document.getElementById('news').innerHTML = NEWS.map(n=>
+document.getElementById('newsBox').innerHTML = NEWS.map(n=>
   '<a class="na" href="'+n.u+'" target="_blank" rel="noopener"><div class="src">'+n.s+'</div><div class="ti">'+n.t+'</div><div class="d">'+n.d+'</div><div class="go">Read →</div></a>'
 ).join('');
 
