@@ -194,6 +194,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <section class="sec" id="fancam">
     <h2>🎽 Family Fan Cam</h2>
     <p class="lead">Show your colors! Our family decked out for the big tournament.</p>
+    <div id="popsSpotlight"></div>
     <div class="players" id="fancamGrid"></div>
   </section>
 
@@ -465,7 +466,21 @@ function renderPlayers(){
 }
 renderPlayers();
 
+function renderPopsSpotlight(){
+  const el=document.getElementById('popsSpotlight'); if(!el) return;
+  el.innerHTML =
+    '<div style="display:flex;gap:16px;align-items:center;background:linear-gradient(135deg,#fffdf5,#fff6e0);border:2px solid var(--gold2);border-radius:18px;padding:14px 16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,.1)">'+
+      '<img src="pops-bobblehead.jpg" alt="Legendary Pops" loading="lazy" style="width:120px;height:120px;flex:0 0 auto;border-radius:14px;object-fit:cover;object-position:center top;border:3px solid var(--gold2);box-shadow:0 3px 10px rgba(0,0,0,.18)">'+
+      '<div style="min-width:0">'+
+        '<div style="font-size:11px;font-weight:900;letter-spacing:.06em;color:var(--gold2);text-transform:uppercase">⭐ Family Centerpiece</div>'+
+        '<div class="nm" style="font-size:20px;margin:2px 0">🏆 Legendary Pops</div>'+
+        '<div class="sm">Father, grandfather, father-in-law and great-grandfather — our #1 fan who watches every game and is loved by all. 💙❤️</div>'+
+      '</div>'+
+    '</div>';
+}
+renderPopsSpotlight();
 function renderFanCam(){
+  renderPopsSpotlight();
   const grid = document.getElementById('fancamGrid');
   const fans = DATA.players.filter(n=>(DATA.photos||{})[n]);
   if(!fans.length){ document.getElementById('fancam').style.display='none'; return; }
