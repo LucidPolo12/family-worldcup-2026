@@ -143,7 +143,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <a href="#matches">⚽ Matches</a>
   <a href="#pickoff">🤝 Pick-Off</a>
   <a href="#groups">📊 Group Tables</a>
-  <a href="#bracket">🌐 Bracket</a>
+  <a href="#bracket">🌐 Knockout</a>
   <a href="#facts">💡 Fun Facts</a>
   <a href="#news">📰 News</a>
   <a href="#winners">🏆 Past Winners</a>
@@ -227,9 +227,9 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   </section>
 
   <section class="sec" id="bracket">
-    <h2>🌐 Knockout Bracket</h2>
-    <p class="lead">The Round of 32 begins June 28. Team names fill in as groups are decided.</p>
-    <div class="card" id="bracket"></div>
+    <h2>🌐 Knockout</h2>
+    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — teams slot in here as each group is decided, starting with the Round of 32 on June 28. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
+    <div class="card" id="bracketGrid"></div>
   </section>
 
   <section class="sec" id="facts">
@@ -797,14 +797,32 @@ function renderBracket(){
   const ko=DATA.matches.filter(m=>isKnk(m));
   const byStage={};
   ko.forEach(m=>{(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
-  const order=['Round of 32','Round of 16','Quarter-final','Quarter-finals','Semi-final','Semi-finals','Third place','Third-place','Final'];
-  const stages=Object.keys(byStage).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
-  document.getElementById('bracket').innerHTML = stages.map(st=>{
-    const rows=byStage[st].map(m=>{
-      const done=m.ah!=null;
-      return '<div class="match"><div class="tm">'+m.h+'</div><div class="sc">'+(done?('<span class="v">'+m.ah+'–'+m.aa+'</span>'):'<span class="v tbd">vs</span>')+'</div><div class="tm a">'+m.a+'</div><div class="mt"><span>Match '+m.n+'</span><span>'+fmtD(m.date)+'</span></div></div>';
+  // Display the rounds in tournament order, using the exact stage names in the data.
+  const order=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
+  const label={'Round of 32':'Round of 32','Round of 16':'Round of 16','Quarterfinal':'Quarterfinals','Semifinal':'Semifinals','Third Place':'Third-Place Play-Off','Final':'Final'};
+  const stages=order.filter(s=>byStage[s]);
+  const R=liveResults();
+  document.getElementById('bracketGrid').innerHTML = stages.map(st=>{
+    const games=byStage[st].slice().sort((a,b)=>a.n-b.n);
+    const rows=games.map(m=>{
+      const r=R[m.n]; const done=!!r;
+      const lv=LIVE[m.n];
+      const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
+      const scoreCell = done ? '<span class="v">'+r[0]+'–'+r[1]+'</span>'
+        : hasLive ? '<span class="v">'+lv.h+'–'+lv.a+'</span>'
+        : '<span class="v tbd">vs</span>';
+      const statusR = done ? 'Full time'
+        : hasLive ? (lv.state==='post'?'✅ Full time':'🔴 LIVE'+(lv.clock?(' '+lv.clock):''))
+        : (koLocal(m.n,m.date)||'TBD');
+      return '<div class="match"><div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
+        '<div class="sc">'+scoreCell+'</div>'+
+        '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
+        '<div class="mt"><span>Match '+m.n+' · '+fmtD(m.date)+'</span><span>'+statusR+'</span></div></div>';
     }).join('');
-    return '<div style="padding:6px 0"><div style="font-weight:900;color:#b06a00;padding:10px 14px 4px">'+st+'</div>'+rows+'</div>';
+    const cnt=games.length+' '+(games.length>1?'matches':'match');
+    return '<div style="padding:4px 0 12px">'+
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;font-weight:900;color:#b06a00;padding:12px 14px 6px;border-bottom:2px solid rgba(176,106,0,.25);margin-bottom:6px">'+
+      '<span>'+(label[st]||st)+'</span><span style="font-weight:700;color:#9a8;font-size:.8rem">'+cnt+'</span></div>'+rows+'</div>';
   }).join('');
 }
 renderBracket();
