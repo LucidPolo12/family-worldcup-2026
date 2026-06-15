@@ -549,15 +549,16 @@ renderFanCam();
 
 function gpMatches(){ return DATA.matches.filter(m=>m.stage==='Group Stage' && m.grp); }
 function gpStats(){
-  const G={};
+  const G={}; const R=liveResults();   // official results + games ESPN has marked Full Time
   gpMatches().forEach(m=>{
     const g=m.grp; G[g]=G[g]||{};
     [m.h,m.a].forEach(t=>{ if(!G[g][t]) G[g][t]={team:t,mp:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
-    if(m.ah==null||m.aa==null) return;
+    const r=R[m.n]; if(!r) return;
+    const ah=r[0], aa=r[1];
     const H=G[g][m.h], A=G[g][m.a];
-    H.mp++; A.mp++; H.gf+=m.ah; H.ga+=m.aa; A.gf+=m.aa; A.ga+=m.ah;
-    if(m.ah>m.aa){ H.w++; H.pts+=3; A.l++; }
-    else if(m.ah<m.aa){ A.w++; A.pts+=3; H.l++; }
+    H.mp++; A.mp++; H.gf+=ah; H.ga+=aa; A.gf+=aa; A.ga+=ah;
+    if(ah>aa){ H.w++; H.pts+=3; A.l++; }
+    else if(ah<aa){ A.w++; A.pts+=3; H.l++; }
     else { H.d++; A.d++; H.pts++; A.pts++; }
   });
   return G;
@@ -573,10 +574,11 @@ function rankGroup(teams){
     if(c.length>1){
       const nm=new Set(c.map(t=>t.team)); const h={};
       c.forEach(t=>h[t.team]={pts:0,gd:0,gf:0});
-      ms.forEach(m=>{ if(m.ah==null) return;
+      const R=liveResults();
+      ms.forEach(m=>{ const r=R[m.n]; if(!r) return;
         if(nm.has(m.h)&&nm.has(m.a)){ const H=h[m.h],A=h[m.a];
-          H.gf+=m.ah; H.gd+=m.ah-m.aa; A.gf+=m.aa; A.gd+=m.aa-m.ah;
-          if(m.ah>m.aa) H.pts+=3; else if(m.ah<m.aa) A.pts+=3; else { H.pts++; A.pts++; } } });
+          H.gf+=r[0]; H.gd+=r[0]-r[1]; A.gf+=r[1]; A.gd+=r[1]-r[0];
+          if(r[0]>r[1]) H.pts+=3; else if(r[0]<r[1]) A.pts+=3; else { H.pts++; A.pts++; } } });
       c.sort((a,b)=> h[b.team].pts-h[a.team].pts || h[b.team].gd-h[a.team].gd || h[b.team].gf-h[a.team].gf
         || b.gd-a.gd || b.gf-a.gf || a.team.localeCompare(b.team));
     }
@@ -610,7 +612,8 @@ function renderGroups(){
   const gon=gc.querySelector('.c.on'); if(gon) gc.scrollLeft=gon.offsetLeft-gc.clientWidth/2+gon.offsetWidth/2;
   document.getElementById('groupsWrap').innerHTML = cards[gFilter]||'';
   thirds.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.team.localeCompare(b.team));
-  const anyPlayed=DATA.matches.some(m=>m.stage==='Group Stage' && m.ah!=null);
+  const RES=liveResults();
+  const anyPlayed=DATA.matches.some(m=>m.stage==='Group Stage' && RES[m.n]);
   document.getElementById('thirdsBox').innerHTML = !anyPlayed
     ? '<div class="note">⏳ Third-place rankings appear here once group games are played.</div>'
     : '<div class="card lb">'+thirds.map((t,i)=>
@@ -660,7 +663,7 @@ function fetchLive(){
         if(cur && (rank[cur.state]||0) >= (rank[st]||0)) return;  // keep the most-advanced state if duplicated
         next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||''};
       }catch(e){} }); });
-      LIVE=next; renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers();
+      LIVE=next; renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers(); renderGroups();
     }).catch(()=>{});
 }
 function provPts(ph,pa,ah,aa){ if(ph==null||pa==null||ah==null||aa==null) return 0;
