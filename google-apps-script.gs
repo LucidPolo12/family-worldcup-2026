@@ -39,6 +39,15 @@ function doPost(e) {
     var rows = picks.map(function (p) {
       return [now, name, p.n, p.ph, p.pa];
     });
+    // Champion & Podium picks (the "final four"). Stored in the SAME Picks sheet
+    // using text codes in the "match" column; the team name goes in predH.
+    var f4 = data.final4;
+    if (f4) {
+      [['CHAMP', f4.champ], ['RUN', f4.run], ['THIRD', f4.third], ['FOURTH', f4.fourth]]
+        .forEach(function (pair) {
+          if (pair[1]) rows.push([now, name, pair[0], pair[1], '']);
+        });
+    }
     if (rows.length) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
       triggerPublish_();   // tell GitHub to publish now (best-effort)

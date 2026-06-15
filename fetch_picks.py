@@ -69,16 +69,40 @@ def main():
     ci = {k: col(k) for k in ("timestamp", "name", "match", "predh", "preda")}
     kos = ko_table()
 
+    # Champion & Podium ("final four") picks share the same sheet, flagged by a
+    # text code in the match column (CHAMP/RUN/THIRD/FOURTH) with the team in predH.
+    PODIUM_CODES = {"CHAMP": "champ", "RUN": "run", "THIRD": "third", "FOURTH": "fourth"}
+    # All four lock at noon CDT on Sun, Jun 28 2026 (= 1:00 PM EDT = 17:00 UTC).
+    PODIUM_LOCK = datetime.datetime(2026, 6, 28, 17, 0, tzinfo=datetime.timezone.utc)
+
     # latest valid pick per (name, match)
-    latest = {}   # (name, n) -> (ts, [h, a])
+    latest = {}      # (name, n) -> (ts, [h, a])
+    podium = {}      # (name, field) -> (ts, team)
     for r in rows[1:]:
         try:
             name = r[ci["name"]].strip()
-            n = int(float(r[ci["match"]]))
+            mraw = r[ci["match"]].strip()
+        except (IndexError, AttributeError):
+            continue
+        ts = parse_ts(r[ci["timestamp"]]) if ci["timestamp"] is not None else None
+        code = mraw.upper()
+        if code in PODIUM_CODES:
+            try:
+                team = r[ci["predh"]].strip()
+            except (IndexError, AttributeError):
+                continue
+            if not team:
+                continue
+            # server-side lock: ignore any podium edit submitted at/after the deadline
+            if ts and ts >= PODIUM_LOCK:
+                continue
+            podium[(name, PODIUM_CODES[code])] = (ts, team)  # append order: last wins
+            continue
+        try:
+            n = int(float(mraw))
             ph = int(float(r[ci["predh"]])); pa = int(float(r[ci["preda"]]))
         except (ValueError, IndexError, TypeError):
             continue
-        ts = parse_ts(r[ci["timestamp"]]) if ci["timestamp"] is not None else None
         # enforce kickoff lock
         if ts and n in kos:
             ki = ko_instant(*kos[n])
@@ -89,10 +113,13 @@ def main():
     picks = {}
     for (name, n), (ts, score) in latest.items():
         picks.setdefault(name, {})[str(n)] = score
+    for (name, field), (ts, team) in podium.items():
+        picks.setdefault(name, {}).setdefault("podium", {})[field] = team
 
     json.dump(picks, open(OUT, "w", encoding="utf-8"), ensure_ascii=False)
-    total = sum(len(v) for v in picks.values())
-    print(f"Ingested {total} picks across {len(picks)} players -> picks.json")
+    total = sum(len(v) - (1 if "podium" in v else 0) for v in picks.values())
+    pod_n = sum(1 for v in picks.values() if v.get("podium"))
+    print(f"Ingested {total} match picks + {pod_n} podium cards across {len(picks)} players -> picks.json")
 
 if __name__ == "__main__":
     main()

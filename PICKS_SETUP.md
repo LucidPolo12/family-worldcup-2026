@@ -42,6 +42,11 @@ GitHub secret. ~10 minutes, one time.
 2. Check the **Picks** Google Sheet — new rows should appear.
 3. On GitHub → Actions → **Run workflow** → confirm it's green and a `picks.json` commit appears; the site standings then reflect the submitted picks.
 
+## Champion & Podium ("final four") picks — auto-sync
+The 🏆 Champion & Podium tab rides the **same** Sheet and pipeline — **no new sheet or secret needed**. Champion/Runner-up/3rd/4th land in the Picks tab as rows with a text code in the `match` column (`CHAMP`/`RUN`/`THIRD`/`FOURTH`) and the team name in `predH`; the Action folds them into each player's standings and shows them on the leaderboard automatically.
+- **One thing to do:** re-deploy the updated `google-apps-script.gs`. In the Apps Script editor: paste the new file contents → **Save** → **Deploy → Manage deployments → (edit, pencil) → Version: New version → Deploy**. (Editing the existing deployment keeps the same `/exec` URL, so nothing else changes.)
+- Podium picks lock server-side at **noon CDT, Sun Jun 28 2026** — any edit submitted at/after that is ignored, same idea as the per-game kickoff lock.
+
 ## Notes
 - Until the URL + secret are set, nothing breaks: the Submit button falls back to the old "copy & send" text, and the Action's picks step is skipped.
 - A pick submitted **after** a game kicks off is ignored automatically (lock by timestamp).

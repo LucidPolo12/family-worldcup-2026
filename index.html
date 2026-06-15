@@ -37,6 +37,8 @@ a{color:inherit}
 .lbrow.r1 .rk{color:var(--gold2)} .lbrow.r1{background:linear-gradient(90deg,#fff9e6,#fff)}
 .lbrow .nm{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .lbrow .meta{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.lbrow .podline{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.lbrow .podline .flg{height:11px}
 .lbrow .tot{font-weight:900;font-size:20px;color:var(--g1)}
 .lbrow .tot small{font-size:11px;color:var(--muted);font-weight:700;display:block;text-align:right}
 .mv{display:inline-flex;align-items:center;gap:1px;font-size:11px;font-weight:900;margin-left:6px;vertical-align:middle}
@@ -410,10 +412,16 @@ function renderLB(){
   const s = rankStandings();
   document.getElementById('lb').innerHTML = s.map(x=>{
     const champ = x.champ ? '<span class="chip alive">'+flag(x.champ)+' '+x.champ+' ✓ alive</span>' : '<span class="chip">no champion yet</span>';
+    const pod = x.podium || {};
+    const podline = (pod.run||pod.third||pod.fourth) ? '<div class="podline">'+
+        (pod.run?'<span>🥈 '+flag(pod.run)+' '+pod.run+'</span>':'')+
+        (pod.third?'<span>🥉 '+flag(pod.third)+' '+pod.third+'</span>':'')+
+        (pod.fourth?'<span>🏅 '+flag(pod.fourth)+' '+pod.fourth+'</span>':'')+
+      '</div>' : '';
     return '<div class="lbrow '+(x.rank===1?'r1':'')+'">'+
       '<div class="rk">'+(x.rank===1?'🥇':x.rank)+'</div>'+
       '<div><div class="nm">'+pavatar(x.name,28)+x.name+' '+champ+'</div>'+
-      '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct</div></div>'+
+      '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct</div>'+podline+'</div>'+
       '<div class="tot">'+x.total+movement(x.name,x.rank)+'<small>pts</small></div>'+
     '</div>';
   }).join('');

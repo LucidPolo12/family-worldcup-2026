@@ -98,8 +98,13 @@ def main():
                 mp += p
                 if p == 8: ex += 1
                 if p > 0: cor += 1
+        # Champion & Podium ("final four") picks, auto-synced from the Google Sheet
+        # via fetch_picks.py. A live champion pick overrides the hardcoded default.
+        podium = pj.get("podium") or {}
+        champ = podium.get("champ") or CHAMPS.get(name)
         standings.append({"name": name, "matchPts": mp, "exact": ex, "correct": cor,
-                          "champ": CHAMPS.get(name), "photo": PHOTOS.get(name), "picks": picks})
+                          "champ": champ, "podium": podium,
+                          "photo": PHOTOS.get(name), "picks": picks})
 
     # Load the existing data.json once: keep probabilities, and use its rank
     # snapshots to work out day-over-day leaderboard movement.
