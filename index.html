@@ -39,9 +39,10 @@ a{color:inherit}
 .lbrow .meta{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
 .lbrow .podline{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
 .lbrow .podline .flg{height:11px}
-.lbrow .tot{font-weight:900;font-size:20px;color:var(--g1)}
-.lbrow .tot small{font-size:11px;color:var(--muted);font-weight:700;display:block;text-align:center}
-.lbrow .tot .ptsblk{display:inline-block;text-align:center;vertical-align:middle}
+.lbrow .tot{font-weight:900;font-size:20px;color:var(--g1);text-align:right;white-space:nowrap}
+.lbrow .tot small{font-size:11px;color:var(--muted);font-weight:700;display:block;text-align:right}
+.lbrow .tot .ptsblk{display:inline-block;text-align:right;vertical-align:middle;min-width:26px}
+.lbrow .tot .mv{margin-left:0;margin-right:5px}
 .mv{display:inline-flex;align-items:center;gap:1px;font-size:11px;font-weight:900;margin-left:6px;vertical-align:middle}
 .mv.up{color:#0a7d3c} .mv.down{color:#d32f2f} .mv.same{color:#9aa6a0}
 .chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:#eef6f0;color:var(--g2);border:1px solid #d9ece0}
@@ -429,7 +430,7 @@ function renderLB(){
       '<div class="rk">'+(x.rank===1?'🥇':x.rank)+'</div>'+
       '<div><div class="nm">'+pavatar(x.name,28)+x.name+' '+champ+'</div>'+
       '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct</div>'+podline+'</div>'+
-      '<div class="tot"><span class="ptsblk">'+x.total+'<small>pts</small></span>'+movement(x.name,x.rank)+'</div>'+
+      '<div class="tot">'+movement(x.name,x.rank)+'<span class="ptsblk">'+x.total+'<small>pts</small></span></div>'+
     '</div>';
   }).join('');
   const anyResults = DATA.matches.some(m=>m.ah!=null);
