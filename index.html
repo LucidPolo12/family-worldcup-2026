@@ -929,6 +929,8 @@ function applyData(d){
   if(d.photos) DATA.photos=Object.assign(DATA.photos||{}, d.photos);
   if(d.probs) DATA.probs=d.probs;
   if(d.generated) DATA.generated=d.generated;
+  if(d.prevRanks) DATA.prevRanks=d.prevRanks;
+  if(d.ranksToday) DATA.ranksToday=d.ranksToday;
   if(d.results){ DATA.matches.forEach(function(m){ var r=d.results[m.n]||d.results[String(m.n)]; if(r){ m.ah=r[0]; m.aa=r[1]; } }); }
   reRenderAll();
 }
