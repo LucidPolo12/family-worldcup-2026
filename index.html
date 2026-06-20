@@ -134,6 +134,49 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .helpwrap .hq:first-child{margin-top:2px}
 .helpwrap p{font-size:13.5px;color:var(--ink);margin:0 0 7px;line-height:1.5}
 .helptip{background:#fffbe9;border:1px solid #f3e6b0;border-radius:10px;padding:8px 11px;font-size:12.5px;margin:6px 0 4px;line-height:1.45}
+/* ---- Knockout: family still-alive tracker ---- */
+.alivehd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin:2px 0 9px}
+.alivehd .ttl{font-weight:900;font-size:14px;color:var(--g2);display:flex;align-items:center;gap:7px}
+.alivehd .sum{font-size:12px;font-weight:800;color:var(--muted)}
+.alivehd .sum b{color:var(--g1)}
+.aliverow{display:flex;gap:10px;overflow-x:auto;padding:2px 0 12px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.acard{flex:0 0 auto;width:168px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;box-shadow:0 1px 2px rgba(0,0,0,.04);scroll-snap-align:start}
+.acard.out{background:#fbf3f3;border-color:#f0d7d7}
+.acard .who{display:flex;align-items:center;font-weight:900;font-size:13.5px;margin-bottom:8px}
+.acard .crow{display:flex;align-items:center;gap:5px}
+.acard .cn{font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acard .cn .none{color:#b9c3bc;font-weight:700;font-size:12px}
+.acard .st{font-size:10px;font-weight:900;padding:2px 7px;border-radius:999px;margin-left:auto;white-space:nowrap}
+.st.alive{background:#e9f9ee;color:#0a7d3c;border:1px solid #bce8cc}
+.st.out{background:#fdeaea;color:#c0392b;border:1px solid #f1c9c9}
+.st.none{background:#eef1ef;color:#8a978f;border:1px solid #e0e6e1}
+.acard .riding{font-size:11px;color:var(--muted);font-weight:700;margin-top:7px;line-height:1.45}
+.acard .riding b{color:var(--gold2)}
+.acard.out .riding b{color:#c0392b}
+.acard .pods{margin-top:7px;display:flex;flex-wrap:wrap;gap:4px}
+.acard .pchip{font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;background:#f4f8f5;border:1px solid var(--line);color:var(--g2)}
+.acard .pchip.pout{background:#fbf0f0;border-color:#f0d7d7;color:#b5685f;text-decoration:line-through}
+/* ---- Knockout: bracket tree ---- */
+.bkt{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 14px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.bcol{flex:0 0 auto;width:250px;scroll-snap-align:start}
+.bcol .rh{font-weight:900;color:#b06a00;font-size:13px;display:flex;justify-content:space-between;align-items:baseline;padding:7px 11px;background:linear-gradient(180deg,#fff8ec,#fff);border:1px solid #f0e2c8;border-radius:10px;margin-bottom:9px}
+.bcol .rh .ct{font-weight:700;color:#9a8;font-size:11px}
+.bm{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px;margin-bottom:9px;box-shadow:0 1px 2px rgba(0,0,0,.04);position:relative}
+.bm.live{border-color:#f3b4b4;box-shadow:0 0 0 2px rgba(220,60,60,.12)}
+.bm.fam{border-color:var(--gold2);box-shadow:0 0 0 2px rgba(244,169,0,.16)}
+.bm .tr{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;padding:3px 0}
+.bm .tr .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.bm .tr .ph{color:#aeb8b1;font-weight:700;font-size:12px}
+.bm .tr .sg{font-weight:900;font-size:15px;min-width:16px;text-align:right;color:var(--ink)}
+.bm .tr.win .nm,.bm .tr.win .sg{color:#0a7d3c}
+.bm .tr.win .nm::after{content:"✓";color:#0a7d3c;font-weight:900;font-size:11px;margin-left:1px}
+.bm .tr.lose{opacity:.5}.bm .tr.lose .nm{text-decoration:line-through}
+.bm .tr .fc{color:var(--gold2);font-size:10.5px;font-weight:900;flex:0 0 auto}
+.bm .ml{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);font-weight:700;margin-top:5px;border-top:1px dashed var(--line);padding-top:5px}
+.bm .ml .kt{color:#b06a00}
+.bm .ml .lv{color:#c0392b;font-weight:900}
+.bm .ups{position:absolute;top:-8px;right:8px;background:#c0392b;color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:999px;letter-spacing:.04em;box-shadow:0 2px 5px rgba(0,0,0,.22)}
+@media(max-width:560px){.bcol{width:84vw}}
 </style>
 </head>
 <body>
@@ -239,7 +282,8 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <section class="sec" id="bracket">
     <h2>🌐 Knockout</h2>
     <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — teams slot in here as each group is decided, starting with the Round of 32 on June 28. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
-    <div class="card" id="bracketGrid"></div>
+    <div id="aliveBox"></div>
+    <div id="bracketGrid"></div>
   </section>
 
   <section class="sec" id="facts">
@@ -816,37 +860,121 @@ function renderMatches(){
 }
 renderChips(); renderMatches();
 
-function renderBracket(){
-  const ko=DATA.matches.filter(m=>isKnk(m));
-  const byStage={};
-  ko.forEach(m=>{(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
-  // Display the rounds in tournament order, using the exact stage names in the data.
-  const order=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
-  const label={'Round of 32':'Round of 32','Round of 16':'Round of 16','Quarterfinal':'Quarterfinals','Semifinal':'Semifinals','Third Place':'Third-Place Play-Off','Final':'Final'};
-  const stages=order.filter(s=>byStage[s]);
-  const R=liveResults();
-  document.getElementById('bracketGrid').innerHTML = stages.map(st=>{
-    const games=byStage[st].slice().sort((a,b)=>a.n-b.n);
-    const rows=games.map(m=>{
-      const r=R[m.n]; const done=!!r;
-      const lv=LIVE[m.n];
-      const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
-      const scoreCell = done ? '<span class="v">'+r[0]+'–'+r[1]+'</span>'
-        : hasLive ? '<span class="v">'+lv.h+'–'+lv.a+'</span>'
-        : '<span class="v tbd">vs</span>';
-      const statusR = done ? 'Full time'
-        : hasLive ? (lv.state==='post'?'✅ Full time':'🔴 LIVE'+(lv.clock?(' '+lv.clock):''))
-        : (koLocal(m.n,m.date)||'TBD');
-      return '<div class="match"><div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
-        '<div class="sc">'+scoreCell+'</div>'+
-        '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
-        '<div class="mt"><span>Match '+m.n+' · '+fmtD(m.date)+'</span><span>'+statusR+'</span></div></div>';
+// A knockout slot holds a real team only once FLAGCODES knows the name;
+// otherwise it's still a placeholder like "Group A 2nd Place" / "TBD".
+function isTeam(name){ return !!FLAGCODES[name]; }
+// Teams we can PROVE are knocked out: the losing side of any knockout match
+// that has a decisive result after regulation (draws go to ET/pens — unknown
+// until the next round fills in, so we don't guess). Group-stage exits aren't
+// auto-detected, so a pick is only ever marked "out" when it's truly gone.
+function eliminatedTeams(){
+  const R=liveResults(), out=new Set();
+  DATA.matches.filter(isKnk).forEach(function(m){
+    const r=R[m.n]; if(!r) return;
+    if(isTeam(m.h) && isTeam(m.a) && r[0]!==r[1]) out.add(r[0]<r[1]?m.h:m.a);
+  });
+  return out;
+}
+// How many family members are riding on each team as their Champion pick.
+function famChampMap(){
+  const fc={};
+  (DATA.standings||[]).forEach(function(p){ if(p.champ) fc[p.champ]=(fc[p.champ]||0)+1; });
+  return fc;
+}
+const POD_PTS={champ:50,run:35,third:20,fourth:10};
+const POD_META={run:['🥈','Runner-up',35],third:['🥉','3rd place',20],fourth:['🏅','4th place',10]};
+
+function renderAlive(){
+  const box=document.getElementById('aliveBox'); if(!box) return;
+  const out=eliminatedTeams();
+  // Show a card for anyone with a stake in the knockouts (Champion or Podium pick).
+  const players=(DATA.standings||[]).filter(function(p){
+    const pod=p.podium||{}; return p.champ||pod.run||pod.third||pod.fourth;
+  });
+  let champTotal=0, champAlive=0;
+  (DATA.standings||[]).forEach(function(p){ if(p.champ){ champTotal++; if(!out.has(p.champ)) champAlive++; } });
+  if(!players.length){
+    box.innerHTML='<div class="alivehd"><div class="ttl">🎯 Still Alive — family stakes</div></div>'+
+      '<p class="lead" style="margin:0">Champion &amp; Podium picks light up here once they\'re locked (noon CDT, Sun Jun 28). This panel will track whose picks are still standing as the knockouts unfold.</p>';
+    return;
+  }
+  const cards=players.map(function(p){
+    const champ=p.champ, isOut=champ&&out.has(champ);
+    const cardCls=isOut?' out':'';
+    const crow = champ
+      ? '<div class="crow"><span class="cn">'+flag(champ)+' '+champ+'</span>'+
+        (isOut?'<span class="st out">OUT</span>':'<span class="st alive">ALIVE</span>')+'</div>'
+      : '<div class="crow"><span class="cn"><span class="none">no champion pick</span></span><span class="st none">—</span></div>';
+    const riding = champ
+      ? (isOut
+        ? '<div class="riding">Champion gone — <b>50 pts</b> off the table</div>'
+        : '<div class="riding">Champion alive — <b>+50</b> if they lift the trophy</div>')
+      : '';
+    const pod=p.podium||{};
+    const pchips=['run','third','fourth'].map(function(k){
+      if(!pod[k]) return '';
+      const t=pod[k], po=out.has(t), mm=POD_META[k];
+      return '<span class="pchip'+(po?' pout':'')+'" title="'+mm[1]+' · '+mm[2]+' pts">'+mm[0]+' '+flag(t)+' '+t+'</span>';
     }).join('');
-    const cnt=games.length+' '+(games.length>1?'matches':'match');
-    return '<div style="padding:4px 0 12px">'+
-      '<div style="display:flex;align-items:baseline;justify-content:space-between;font-weight:900;color:#b06a00;padding:12px 14px 6px;border-bottom:2px solid rgba(176,106,0,.25);margin-bottom:6px">'+
-      '<span>'+(label[st]||st)+'</span><span style="font-weight:700;color:#9a8;font-size:.8rem">'+cnt+'</span></div>'+rows+'</div>';
+    const pods=pchips?'<div class="pods">'+pchips+'</div>':'';
+    return '<div class="acard'+cardCls+'"><div class="who">'+pavatar(p.name,24)+p.name+'</div>'+crow+riding+pods+'</div>';
   }).join('');
+  const sum = champTotal
+    ? '<div class="sum"><b>'+champAlive+'</b> of '+champTotal+' family champion'+(champTotal>1?'s':'')+' still standing</div>'
+    : '';
+  box.innerHTML='<div class="alivehd"><div class="ttl">🎯 Still Alive — family stakes</div>'+sum+'</div>'+
+    '<div class="aliverow">'+cards+'</div>';
+}
+
+function renderBracket(){
+  renderAlive();
+  const byStage={};
+  DATA.matches.filter(isKnk).forEach(function(m){(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
+  const order=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
+  const label={'Round of 32':'Round of 32','Round of 16':'Round of 16','Quarterfinal':'Quarterfinals','Semifinal':'Semifinals','Third Place':'Third Place','Final':'Final'};
+  const stages=order.filter(s=>byStage[s]);
+  const R=liveResults(), fc=famChampMap();
+
+  function teamRow(name, score, cls){
+    const real=isTeam(name);
+    const nm = real ? '<span class="nm">'+flag(name)+' '+name+(fc[name]?' <span class="fc">🏆'+fc[name]+'</span>':'')+'</span>'
+                    : '<span class="nm"><span class="ph">'+(name==='TBD'?'TBD':name)+'</span></span>';
+    const sg = '<span class="sg">'+(score!=null?score:'')+'</span>';
+    return '<div class="tr'+(cls?' '+cls:'')+'">'+nm+sg+'</div>';
+  }
+
+  document.getElementById('bracketGrid').innerHTML =
+    '<div class="bkt">'+stages.map(function(st){
+      const games=byStage[st].slice().sort((a,b)=>a.n-b.n);
+      const cards=games.map(function(m){
+        const r=R[m.n], done=!!r;
+        const lv=(typeof LIVE!=='undefined'?LIVE:{})[m.n];
+        const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
+        const hs = done?r[0]:(hasLive?lv.h:null);
+        const as = done?r[1]:(hasLive?lv.a:null);
+        let hCls='', aCls='';
+        if(done && isTeam(m.h) && isTeam(m.a) && r[0]!==r[1]){
+          if(r[0]>r[1]){hCls='win';aCls='lose';} else {hCls='lose';aCls='win';}
+        }
+        // Upset badge: a decisive result where the pre-match underdog won.
+        const p=(DATA.probs||{})[m.n]||(DATA.probs||{})[String(m.n)];
+        let upset=false;
+        if(done && p && isTeam(m.h) && isTeam(m.a) && r[0]!==r[1]){
+          upset = r[0]>r[1] ? (p.h+0.12 < p.a) : (p.a+0.12 < p.h);
+        }
+        const famHot = (fc[m.h]||0)+(fc[m.a]||0) > 0;
+        const status = done ? '<span class="kt">Full time</span>'
+          : hasLive ? '<span class="lv">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'
+          : '<span class="kt">'+(koLocal(m.n,m.date)||'TBD')+'</span>';
+        return '<div class="bm'+(hasLive?' live':'')+(famHot?' fam':'')+'">'+
+          (upset?'<span class="ups">🚨 UPSET</span>':'')+
+          teamRow(m.h, hs, hCls)+
+          teamRow(m.a, as, aCls)+
+          '<div class="ml"><span>Match '+m.n+' · '+fmtD(m.date)+'</span>'+status+'</div></div>';
+      }).join('');
+      const cnt=games.length+' '+(games.length>1?'matches':'match');
+      return '<div class="bcol"><div class="rh"><span>'+(label[st]||st)+'</span><span class="ct">'+cnt+'</span></div>'+cards+'</div>';
+    }).join('')+'</div>';
 }
 renderBracket();
 
