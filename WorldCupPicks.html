@@ -274,11 +274,11 @@ document.getElementById("clearBtn").onclick=()=>{
 // 48 tournament teams, pulled straight from the group-stage fixtures.
 const TEAMS = [...new Set(FIX.filter(f=>f.stage==="Group Stage").flatMap(f=>[f.h,f.a]))].sort((a,b)=>a.localeCompare(b));
 if(!state.final4) state.final4 = {champ:"",run:"",third:"",fourth:""};
-// Deadlines (Central Daylight Time, UTC-5 in June).
-const PODIUM_OPEN = new Date("2026-06-28T01:00:00-05:00"); // Runner-up / 3rd / 4th unlock
-const PODIUM_LOCK = new Date("2026-06-28T12:00:00-05:00"); // All four lock for good
-const OPEN_LABEL = "Sun, Jun 28 · 1:00 AM CDT";
-const LOCK_LABEL = "Sun, Jun 28 · 12:00 PM (noon) CDT";
+// Deadlines. All four picks are editable now and lock at the first Quarterfinal kickoff.
+const PODIUM_OPEN = new Date("2026-06-11T00:00:00-05:00"); // open from the start of the tournament
+const PODIUM_LOCK = new Date("2026-07-09T16:00:00-04:00"); // first QF kickoff (Thu Jul 9, 4:00 PM ET)
+const OPEN_LABEL = "now";
+const LOCK_LABEL = "Thu, Jul 9 · 4:00 PM ET (Quarterfinal kickoff)";
 function podiumPhase(){ const now=Date.now(); if(now>=PODIUM_LOCK.getTime()) return "locked"; if(now>=PODIUM_OPEN.getTime()) return "open"; return "pre"; }
 
 const panelPodium = document.getElementById("panelPodium");
@@ -305,7 +305,7 @@ function renderPodium(){
   else podNote=' <span class="soonpill">🔒 LOCKED</span>';
   const champNote = champLocked ? ' <span class="soonpill">🔒 LOCKED</span>' : ' <span class="openpill">OPEN NOW</span>';
   let html='';
-  html+='<div class="pintro">Call the <b>final four</b> of the tournament for big bonus points — <b>exact finish only</b>: 🥇 Champion <b>50</b> · 🥈 Runner-up <b>35</b> · 🥉 3rd <b>20</b> · 🏅 4th <b>10</b> (up to 115!). Your <b>Champion</b> is open to pick and change right now. <b>Runner-up, 3rd &amp; 4th</b> unlock once the Round of 32 bracket is set ('+OPEN_LABEL+') so you can map out a path to the final. All four lock at <b>'+LOCK_LABEL+'</b> — change them as often as you like until then.</div>';
+  html+='<div class="pintro">Call the <b>final four</b> of the tournament for big bonus points — <b>exact finish only</b>: 🥇 Champion <b>50</b> · 🥈 Runner-up <b>35</b> · 🥉 3rd <b>20</b> · 🏅 4th <b>10</b> (up to 115!). All four — <b>Champion, Runner-up, 3rd &amp; 4th</b> — are open to pick and change right now, so you can keep adjusting your path as teams advance. They all lock at <b>'+LOCK_LABEL+'</b> — change them as often as you like until then.</div>';
   html+=podRow('champ','Champion'+champNote,'🥇',champLocked,'');
   html+=podRow('run','Runner-up'+podNote,'🥈',podiumDisabled,'');
   html+=podRow('third','3rd place'+podNote,'🥉',podiumDisabled,'');

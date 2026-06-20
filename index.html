@@ -172,6 +172,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .bm .tr.win .nm::after{content:"✓";color:#0a7d3c;font-weight:900;font-size:11px;margin-left:1px}
 .bm .tr.lose{opacity:.5}.bm .tr.lose .nm{text-decoration:line-through}
 .bm .tr .fc{color:var(--gold2);font-size:10.5px;font-weight:900;flex:0 0 auto}
+.bm .tr .qtag{color:#0a7d3c;font-size:9.5px;font-weight:900;background:#e9f9ee;border:1px solid #bce8cc;border-radius:999px;padding:0 5px;flex:0 0 auto}
 .bm .ml{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);font-weight:700;margin-top:5px;border-top:1px dashed var(--line);padding-top:5px}
 .bm .ml .kt{color:#b06a00}
 .bm .ml .lv{color:#c0392b;font-weight:900}
@@ -281,7 +282,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 
   <section class="sec" id="bracket">
     <h2>🌐 Knockout</h2>
-    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — teams slot in here as each group is decided, starting with the Round of 32 on June 28. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
+    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
     <div id="aliveBox"></div>
     <div id="bracketGrid"></div>
   </section>
@@ -321,7 +322,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 
       <div class="hq">🥇 Champion &amp; Podium picks <span style="color:var(--gold2)">⭐ new!</span></div>
       <p>In <b>Make Your Picks</b>, open the <b>🏆 Champion &amp; Podium</b> tab and call the top four of the whole tournament. Big bonus points for an <b>exact finish</b>: <b>50</b> for the Champion, <b>35</b> for the Runner-up, <b>20</b> for 3rd place, and <b>10</b> for 4th — up to <b>115</b> in all. You only score for a team in the <b>exact</b> spot, so place them carefully!</p>
-      <p>Your <b>Champion</b> is open to pick now and change as often as you like. <b>Runner-up, 3rd &amp; 4th</b> unlock once the Round of 32 bracket is set (early Sun, Jun 28) so you can plan a path to the Final. All four lock at <b>noon CDT on Sun, Jun 28</b>, before the knockouts begin.</p>
+      <p>All four — <b>Champion, Runner-up, 3rd &amp; 4th</b> — are open to pick and change as often as you like, so you can keep refining your path as teams advance and others fall. They all lock at the <b>first Quarterfinal kickoff (Thu, Jul 9 · 4:00 PM ET)</b>.</p>
 
       <div class="hq">📅 Today's Games</div>
       <p>See today's matches with kickoff times in your local time, plus who's already picked and who still needs to.</p>
@@ -863,15 +864,62 @@ renderChips(); renderMatches();
 // A knockout slot holds a real team only once FLAGCODES knows the name;
 // otherwise it's still a placeholder like "Group A 2nd Place" / "TBD".
 function isTeam(name){ return !!FLAGCODES[name]; }
+
+// ---- Live Round-of-32 fill: drop real teams into the bracket the moment a
+// group position is mathematically clinched. We only ever claim a spot as
+// "clinched" when it's certain on POINTS ALONE (no tiebreaker could still flip
+// it) — so the bracket can never show the wrong team. Once a group has played
+// all its games we use the app's own table ranking (rankGroup) for the final
+// winner / runner-up / third. Third-place slots span several groups and can't
+// be assigned until every group is done, so those stay as labels for now.
+function groupOutcomes(){
+  const G=gpStats(), R=liveResults(), out={};
+  Object.keys(G).forEach(function(g){
+    const stats=G[g], teams=Object.keys(stats);
+    const base={}; teams.forEach(t=>base[t]=stats[t].pts);
+    const rem=gpMatches().filter(m=>m.grp===g && !R[m.n]).map(m=>[m.h,m.a]);
+    let winner=null, runner=null, third=null;
+    if(rem.length===0){
+      const r=rankGroup(Object.values(stats));
+      winner=r[0]&&r[0].team; runner=r[1]&&r[1].team; third=r[2]&&r[2].team;
+    } else {
+      const aw={}, ar={}; teams.forEach(t=>{aw[t]=true;ar[t]=true;});
+      const N=rem.length, total=Math.pow(3,N);
+      for(let mask=0;mask<total;mask++){
+        const p=Object.assign({},base); let mm=mask;
+        for(let i=0;i<N;i++){ const o=mm%3; mm=(mm-o)/3; const pr=rem[i];
+          if(o===0)p[pr[0]]+=3; else if(o===1)p[pr[1]]+=3; else { p[pr[0]]++; p[pr[1]]++; } }
+        teams.forEach(function(t){
+          let above=0, equal=0;
+          teams.forEach(function(u){ if(u!==t){ if(p[u]>p[t])above++; else if(p[u]===p[t])equal++; } });
+          if(!(above===0 && equal===0)) aw[t]=false;   // not the unique points leader in some scenario
+          if(!(above===1 && equal===0)) ar[t]=false;   // not the unique 2nd on points in some scenario
+        });
+      }
+      teams.forEach(function(t){ if(aw[t])winner=t; if(ar[t])runner=t; });
+    }
+    out[g]={winner:winner||null, runner:runner||null, third:third||null, complete:rem.length===0};
+  });
+  return out;
+}
+function koResolve(name, O){
+  let m;
+  if(m=/^Group ([A-L]) Winner$/.exec(name)) return (O[m[1]]&&O[m[1]].winner)||null;
+  if(m=/^Group ([A-L]) 2nd Place$/.exec(name)) return (O[m[1]]&&O[m[1]].runner)||null;
+  return null; // third-place + later-round slots resolve elsewhere
+}
+function teamOf(name, O){ return isTeam(name) ? name : (koResolve(name, O)||name); }
+
 // Teams we can PROVE are knocked out: the losing side of any knockout match
 // that has a decisive result after regulation (draws go to ET/pens — unknown
 // until the next round fills in, so we don't guess). Group-stage exits aren't
 // auto-detected, so a pick is only ever marked "out" when it's truly gone.
 function eliminatedTeams(){
-  const R=liveResults(), out=new Set();
+  const R=liveResults(), O=groupOutcomes(), out=new Set();
   DATA.matches.filter(isKnk).forEach(function(m){
     const r=R[m.n]; if(!r) return;
-    if(isTeam(m.h) && isTeam(m.a) && r[0]!==r[1]) out.add(r[0]<r[1]?m.h:m.a);
+    const h=teamOf(m.h,O), a=teamOf(m.a,O);
+    if(isTeam(h) && isTeam(a) && r[0]!==r[1]) out.add(r[0]<r[1]?h:a);
   });
   return out;
 }
@@ -895,7 +943,7 @@ function renderAlive(){
   (DATA.standings||[]).forEach(function(p){ if(p.champ){ champTotal++; if(!out.has(p.champ)) champAlive++; } });
   if(!players.length){
     box.innerHTML='<div class="alivehd"><div class="ttl">🎯 Still Alive — family stakes</div></div>'+
-      '<p class="lead" style="margin:0">Champion &amp; Podium picks light up here once they\'re locked (noon CDT, Sun Jun 28). This panel will track whose picks are still standing as the knockouts unfold.</p>';
+      '<p class="lead" style="margin:0">Champion &amp; Podium picks light up here as they\'re made. You can adjust all four right up to the Quarterfinals (Thu Jul 9), and this panel tracks whose picks are still standing as the knockouts unfold.</p>';
     return;
   }
   const cards=players.map(function(p){
@@ -933,11 +981,12 @@ function renderBracket(){
   const order=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
   const label={'Round of 32':'Round of 32','Round of 16':'Round of 16','Quarterfinal':'Quarterfinals','Semifinal':'Semifinals','Third Place':'Third Place','Final':'Final'};
   const stages=order.filter(s=>byStage[s]);
-  const R=liveResults(), fc=famChampMap();
+  const R=liveResults(), fc=famChampMap(), O=groupOutcomes();
 
-  function teamRow(name, score, cls){
+  function teamRow(name, score, cls, justIn){
     const real=isTeam(name);
-    const nm = real ? '<span class="nm">'+flag(name)+' '+name+(fc[name]?' <span class="fc">🏆'+fc[name]+'</span>':'')+'</span>'
+    const tag = (real && justIn) ? ' <span class="qtag">✓ in</span>' : '';
+    const nm = real ? '<span class="nm">'+flag(name)+' '+name+(fc[name]?' <span class="fc">🏆'+fc[name]+'</span>':'')+tag+'</span>'
                     : '<span class="nm"><span class="ph">'+(name==='TBD'?'TBD':name)+'</span></span>';
     const sg = '<span class="sg">'+(score!=null?score:'')+'</span>';
     return '<div class="tr'+(cls?' '+cls:'')+'">'+nm+sg+'</div>';
@@ -947,29 +996,33 @@ function renderBracket(){
     '<div class="bkt">'+stages.map(function(st){
       const games=byStage[st].slice().sort((a,b)=>a.n-b.n);
       const cards=games.map(function(m){
+        // Resolve placeholder slots ("Group A Winner") to real teams once clinched.
+        const hN=teamOf(m.h,O), aN=teamOf(m.a,O);
+        const hJustIn = !isTeam(m.h) && isTeam(hN);
+        const aJustIn = !isTeam(m.a) && isTeam(aN);
         const r=R[m.n], done=!!r;
         const lv=(typeof LIVE!=='undefined'?LIVE:{})[m.n];
         const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
         const hs = done?r[0]:(hasLive?lv.h:null);
         const as = done?r[1]:(hasLive?lv.a:null);
         let hCls='', aCls='';
-        if(done && isTeam(m.h) && isTeam(m.a) && r[0]!==r[1]){
+        if(done && isTeam(hN) && isTeam(aN) && r[0]!==r[1]){
           if(r[0]>r[1]){hCls='win';aCls='lose';} else {hCls='lose';aCls='win';}
         }
         // Upset badge: a decisive result where the pre-match underdog won.
         const p=(DATA.probs||{})[m.n]||(DATA.probs||{})[String(m.n)];
         let upset=false;
-        if(done && p && isTeam(m.h) && isTeam(m.a) && r[0]!==r[1]){
+        if(done && p && isTeam(hN) && isTeam(aN) && r[0]!==r[1]){
           upset = r[0]>r[1] ? (p.h+0.12 < p.a) : (p.a+0.12 < p.h);
         }
-        const famHot = (fc[m.h]||0)+(fc[m.a]||0) > 0;
+        const famHot = (fc[hN]||0)+(fc[aN]||0) > 0;
         const status = done ? '<span class="kt">Full time</span>'
           : hasLive ? '<span class="lv">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'
           : '<span class="kt">'+(koLocal(m.n,m.date)||'TBD')+'</span>';
         return '<div class="bm'+(hasLive?' live':'')+(famHot?' fam':'')+'">'+
           (upset?'<span class="ups">🚨 UPSET</span>':'')+
-          teamRow(m.h, hs, hCls)+
-          teamRow(m.a, as, aCls)+
+          teamRow(hN, hs, hCls, hJustIn)+
+          teamRow(aN, as, aCls, aJustIn)+
           '<div class="ml"><span>Match '+m.n+' · '+fmtD(m.date)+'</span>'+status+'</div></div>';
       }).join('');
       const cnt=games.length+' '+(games.length>1?'matches':'match');
