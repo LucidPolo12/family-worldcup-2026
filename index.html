@@ -233,6 +233,19 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 @keyframes celebPop{0%{transform:scale(0) rotate(-20deg);opacity:0}45%{transform:scale(1.3) rotate(8deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
 .acard .cele{position:absolute;top:-9px;right:-5px;font-size:22px;animation:celebPop .7s ease-out 1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
 .acard .riding .adv{color:#0a7d3c;font-weight:900}
+/* ---- Knockout: champion path-to-Final highlight ---- */
+.acard{cursor:pointer}
+.acard.sel{box-shadow:0 0 0 2px var(--g1);border-color:var(--g1)}
+.pathhint{font-size:11.5px;font-weight:700;color:var(--g2);background:#eef6f0;border:1px solid #d9ece0;border-radius:9px;padding:6px 10px;margin:2px 0 11px;line-height:1.45}
+.bm.onpath{border-color:var(--gold2);box-shadow:0 0 0 2px rgba(244,169,0,.4)}
+.bm.path-now{box-shadow:0 0 0 3px rgba(244,169,0,.65)}
+.bm.path-out{border-color:#e0a59c;box-shadow:0 0 0 2px rgba(192,57,43,.4)}
+.bm.path-future,.bm.path-moot{box-shadow:0 0 0 2px rgba(244,169,0,.18)}
+.bm.path-moot{opacity:.7}
+.bm .pathmk{position:absolute;top:-8px;left:8px;font-size:10.5px;font-weight:900;border-radius:999px;padding:1px 7px;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+.pm-won{background:#0a7d3c;color:#fff}
+.pm-out{background:#c0392b;color:#fff}
+.pm-now{background:var(--gold2);color:#3a2a00}
 </style>
 </head>
 <body>
@@ -1022,6 +1035,8 @@ const KO_FEED={
   97:['W89','W90'],98:['W93','W94'],99:['W91','W92'],100:['W95','W96'],
   101:['W97','W98'],102:['W99','W100'],103:['L101','L102'],104:['W101','W102']
 };
+// Forward map: which match a given match's WINNER advances to (derived from KO_FEED).
+const KO_NEXT=(function(){ const m={}; Object.keys(KO_FEED).forEach(function(t){ KO_FEED[t].forEach(function(tok){ if(tok.charAt(0)==='W') m[+tok.slice(1)]=+t; }); }); return m; })();
 function koContext(){
   const byN={}; DATA.matches.forEach(function(m){byN[m.n]=m;});
   const O=groupOutcomes();
@@ -1088,7 +1103,8 @@ function renderAlive(){
   const cards=players.map(function(p){
     const champ=p.champ, isOut=champ&&out.has(champ);
     const isCele=champ&&celeb.has(champ);
-    const cardCls=(isOut?' out':'')+(isCele?' celebrate':'');
+    const selCls=(KO_SELPLAYER===p.name)?' sel':'';
+    const cardCls=(isOut?' out':'')+(isCele?' celebrate':'')+selCls;
     const crow = champ
       ? '<div class="crow"><span class="cn">'+flag(champ)+' '+champ+'</span>'+
         (isOut?'<span class="st out">OUT</span>':'<span class="st alive">ALIVE</span>')+'</div>'
@@ -1105,13 +1121,22 @@ function renderAlive(){
       return '<span class="pchip'+(po?' pout':'')+'" title="'+mm[1]+' · '+mm[2]+' pts">'+mm[0]+' '+flag(t)+' '+t+'</span>';
     }).join('');
     const pods=pchips?'<div class="pods">'+pchips+'</div>':'';
-    return '<div class="acard'+cardCls+'">'+(isCele?'<span class="cele">🎉</span>':'')+'<div class="who">'+pavatar(p.name,24)+p.name+'</div>'+crow+riding+pods+'</div>';
+    return '<div class="acard'+cardCls+'" onclick="koSelectPlayer(\''+p.name+'\')">'+(isCele?'<span class="cele">🎉</span>':'')+'<div class="who">'+pavatar(p.name,24)+p.name+'</div>'+crow+riding+pods+'</div>';
   }).join('');
   const sum = champTotal
     ? '<div class="sum"><b>'+champAlive+'</b> of '+champTotal+' family champion'+(champTotal>1?'s':'')+' still standing</div>'
     : '';
+  let hint='';
+  if(KO_SELPLAYER){
+    const sp=(DATA.standings||[]).find(function(p){return p.name===KO_SELPLAYER;});
+    if(sp){ hint = sp.champ
+      ? '<div class="pathhint">🧭 Tracing <b>'+KO_SELPLAYER+'\'s</b> champion '+flag(sp.champ)+' '+sp.champ+' — their road to the Final is highlighted in the bracket below. Tap the name again to clear.</div>'
+      : '<div class="pathhint">🧭 '+KO_SELPLAYER+' hasn\'t picked a champion yet — nothing to trace. Tap again to clear.</div>'; }
+  } else if(players.length){
+    hint='<div class="pathhint" style="background:#fbfdfb;color:var(--muted);border-color:var(--line)">🧭 Tap a family member to trace their champion\'s road to the Final.</div>';
+  }
   box.innerHTML='<div class="alivehd"><div class="ttl">🎯 Still Alive — family stakes</div>'+sum+'</div>'+
-    '<div class="aliverow">'+cards+'</div>';
+    hint+'<div class="aliverow">'+cards+'</div>';
 }
 
 // One-time "advance" animations: we remember what we've already shown so a
@@ -1122,6 +1147,30 @@ let KO_SEEN={win:{},inn:{},ups:{},cel:{}}, KO_PRIMED=false;
 const KO_ANIMCLS={win:'bm-won',inn:'tr-in',ups:'bm-upset'};
 function koAnim(kind,id){ const s=KO_SEEN[kind]; if(s[id]) return ''; s[id]=1; return KO_PRIMED?(' '+KO_ANIMCLS[kind]):''; }
 function pickCountForMatch(n){ return (DATA.standings||[]).filter(function(p){ return (p.picks||[]).some(function(pk){ return pk.n===n; }); }).length; }
+
+// ---- Player "path to the Final": tap a family member to trace their champion's
+// route through the bracket. Selection is re-render-driven (toggles on tap).
+let KO_SELPLAYER=null;
+function koSelectPlayer(name){ KO_SELPLAYER = (KO_SELPLAYER===name)?null:name; renderBracket(); }
+function champR32Match(champ, ctx){
+  for(let n=73;n<=88;n++){ const t=koResolveTeams(n,ctx); if(t.h===champ||t.a===champ) return n; }
+  return null;
+}
+// The fixed bracket route a champion would travel (R32 -> Final), with a status
+// per match: won / out / now (here, undecided) / future (not yet reached) /
+// moot (after a loss). Returns null until the champion's R32 slot is set.
+function champPath(champ, ctx){
+  const start=champR32Match(champ,ctx); if(!start) return null;
+  const path=[]; let n=start; while(n){ path.push(n); n=KO_NEXT[n]; }
+  const status={}; let busted=false;
+  path.forEach(function(mn){
+    const t=koResolveTeams(mn,ctx), r=ctx.R[mn], inMatch=(t.h===champ||t.a===champ);
+    if(inMatch && r && r[0]!==r[1]){ const won=((r[0]>r[1]?t.h:t.a)===champ); status[mn]=won?'won':'out'; if(!won) busted=true; }
+    else if(inMatch){ status[mn]='now'; }
+    else { status[mn]= busted?'moot':'future'; }
+  });
+  return {set:new Set(path), status:status};
+}
 
 // Champion teams that have just won a NEW knockout match this render — used to
 // celebrate (gold pulse + 🎉). Gated like the advance animations: first paint
@@ -1224,6 +1273,8 @@ function renderBracket(){
   const ctx=koContext(), R=ctx.R, O=ctx.O, TA=ctx.TA, fc=famChampMap();
   renderKoLive(ctx);
   renderKoFinal(ctx);
+  const _selP = KO_SELPLAYER ? (DATA.standings||[]).find(function(p){return p.name===KO_SELPLAYER;}) : null;
+  const koPath = (_selP && _selP.champ) ? champPath(_selP.champ, ctx) : null;
 
   function teamRow(name, score, cls, justIn, animCls){
     const real=isTeam(name);
@@ -1258,6 +1309,11 @@ function renderBracket(){
           upset = r[0]>r[1] ? (p.h+0.12 < p.a) : (p.a+0.12 < p.h);
         }
         const famHot = (fc[hN]||0)+(fc[aN]||0) > 0;
+        // Champion path-to-Final highlight (when a family member is selected).
+        const onPath = koPath && koPath.set.has(m.n);
+        const pstat = onPath ? (koPath.status[m.n]||'future') : '';
+        const pathCls = onPath ? ' onpath path-'+pstat : '';
+        const pmk = (pstat==='won'||pstat==='out'||pstat==='now') ? '<span class="pathmk pm-'+pstat+'">'+({won:'✓',out:'✗',now:'●'}[pstat])+'</span>' : '';
         // One-time advance animations (only fire when something newly changes).
         const wonCls = (done && (hCls||aCls)) ? koAnim('win', m.n) : '';
         const upsCls = upset ? koAnim('ups', m.n) : '';
@@ -1266,8 +1322,8 @@ function renderBracket(){
         const status = done ? '<span class="kt">Full time</span>'
           : hasLive ? '<span class="lv">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'
           : '<span class="kt">'+(koLocal(m.n,m.date)||'TBD')+'</span>';
-        return '<div class="bm'+(hasLive?' live':'')+(famHot?' fam':'')+wonCls+upsCls+'">'+
-          (upset?'<span class="ups">🚨 UPSET</span>':'')+
+        return '<div class="bm'+(hasLive?' live':'')+(famHot?' fam':'')+wonCls+upsCls+pathCls+'">'+
+          (upset?'<span class="ups">🚨 UPSET</span>':'')+pmk+
           teamRow(hN, hs, hCls, hJustIn, hAnim)+
           teamRow(aN, as, aCls, aJustIn, aAnim)+
           '<div class="ml"><span>Match '+m.n+' · '+fmtD(m.date)+'</span>'+status+'</div></div>';
