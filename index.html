@@ -226,6 +226,13 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .kofinal .fork .opt .w{font-size:13.5px;font-weight:900;margin-top:3px;color:var(--gold)}
 .kofinal .stk{margin-top:10px;font-size:11.5px;font-weight:700;opacity:.92}
 @media(max-width:480px){.kofinal .fork{grid-template-columns:1fr}}
+/* ---- Knockout: champion-advances celebration ---- */
+.acard{position:relative}
+@keyframes celebPulse{0%{box-shadow:0 0 0 0 rgba(244,169,0,.55)}60%{box-shadow:0 0 0 7px rgba(244,169,0,0)}100%{box-shadow:0 0 0 0 rgba(244,169,0,0)}}
+.acard.celebrate{animation:celebPulse 1.5s ease-out 3;border-color:var(--gold2);background:linear-gradient(135deg,#fffdf3,#fff6df)}
+@keyframes celebPop{0%{transform:scale(0) rotate(-20deg);opacity:0}45%{transform:scale(1.3) rotate(8deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.acard .cele{position:absolute;top:-9px;right:-5px;font-size:22px;animation:celebPop .7s ease-out 1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.acard .riding .adv{color:#0a7d3c;font-weight:900}
 </style>
 </head>
 <body>
@@ -1066,6 +1073,7 @@ const POD_META={run:['🥈','Runner-up',35],third:['🥉','3rd place',20],fourth
 function renderAlive(){
   const box=document.getElementById('aliveBox'); if(!box) return;
   const out=eliminatedTeams();
+  const celeb=champCelebrations();
   // Show a card for anyone with a stake in the knockouts (Champion or Podium pick).
   const players=(DATA.standings||[]).filter(function(p){
     const pod=p.podium||{}; return p.champ||pod.run||pod.third||pod.fourth;
@@ -1079,7 +1087,8 @@ function renderAlive(){
   }
   const cards=players.map(function(p){
     const champ=p.champ, isOut=champ&&out.has(champ);
-    const cardCls=isOut?' out':'';
+    const isCele=champ&&celeb.has(champ);
+    const cardCls=(isOut?' out':'')+(isCele?' celebrate':'');
     const crow = champ
       ? '<div class="crow"><span class="cn">'+flag(champ)+' '+champ+'</span>'+
         (isOut?'<span class="st out">OUT</span>':'<span class="st alive">ALIVE</span>')+'</div>'
@@ -1096,7 +1105,7 @@ function renderAlive(){
       return '<span class="pchip'+(po?' pout':'')+'" title="'+mm[1]+' · '+mm[2]+' pts">'+mm[0]+' '+flag(t)+' '+t+'</span>';
     }).join('');
     const pods=pchips?'<div class="pods">'+pchips+'</div>':'';
-    return '<div class="acard'+cardCls+'"><div class="who">'+pavatar(p.name,24)+p.name+'</div>'+crow+riding+pods+'</div>';
+    return '<div class="acard'+cardCls+'">'+(isCele?'<span class="cele">🎉</span>':'')+'<div class="who">'+pavatar(p.name,24)+p.name+'</div>'+crow+riding+pods+'</div>';
   }).join('');
   const sum = champTotal
     ? '<div class="sum"><b>'+champAlive+'</b> of '+champTotal+' family champion'+(champTotal>1?'s':'')+' still standing</div>'
@@ -1109,10 +1118,27 @@ function renderAlive(){
 // winner/qualifier only animates the FIRST time it appears — not on every 60s
 // refresh. The first render primes the memory silently (no animation storm on
 // load); only genuinely new changes animate after that.
-let KO_SEEN={win:{},inn:{},ups:{}}, KO_PRIMED=false;
+let KO_SEEN={win:{},inn:{},ups:{},cel:{}}, KO_PRIMED=false;
 const KO_ANIMCLS={win:'bm-won',inn:'tr-in',ups:'bm-upset'};
 function koAnim(kind,id){ const s=KO_SEEN[kind]; if(s[id]) return ''; s[id]=1; return KO_PRIMED?(' '+KO_ANIMCLS[kind]):''; }
 function pickCountForMatch(n){ return (DATA.standings||[]).filter(function(p){ return (p.picks||[]).some(function(pk){ return pk.n===n; }); }).length; }
+
+// Champion teams that have just won a NEW knockout match this render — used to
+// celebrate (gold pulse + 🎉). Gated like the advance animations: first paint
+// records silently, only genuinely new wins celebrate afterward.
+function champCelebrations(){
+  const ctx=koContext(), celeb=new Set();
+  const champTeams=new Set((DATA.standings||[]).map(function(p){return p.champ;}).filter(Boolean));
+  if(!champTeams.size) return celeb;
+  DATA.matches.filter(isKnk).forEach(function(m){
+    const oc=koOutcome(m.n,ctx);
+    if(oc.winner && champTeams.has(oc.winner)){
+      const id=oc.winner+':'+m.n;
+      if(!KO_SEEN.cel[id]){ KO_SEEN.cel[id]=1; if(KO_PRIMED) celeb.add(oc.winner); }
+    }
+  });
+  return celeb;
+}
 
 // ---- The Final hero card + "who wins the whole challenge" projection.
 const FINAL_N=104, THIRD_N=103;
