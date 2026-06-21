@@ -302,7 +302,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 
   <section class="sec" id="bracket">
     <h2>🌐 Knockout</h2>
-    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
+    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28, and each winner carries forward through the rounds all the way to the Final. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
     <div id="koLiveBox"></div>
     <div id="aliveBox"></div>
     <div id="bracketGrid"></div>
@@ -977,17 +977,52 @@ function koTeams(m, O, TA){
   return {h:h, a:a};
 }
 
-// Teams we can PROVE are knocked out: the losing side of any knockout match
-// that has a decisive result after regulation (draws go to ET/pens — unknown
-// until the next round fills in, so we don't guess). Group-stage exits aren't
-// auto-detected, so a pick is only ever marked "out" when it's truly gone.
+// ---- Full-bracket advancement: winners flow R32 -> R16 -> QF -> SF -> Final.
+// Feeder map from the official FIFA 2026 bracket: each later-round match takes
+// the Winner (W) or Loser (L) of two earlier matches.
+const KO_FEED={
+  89:['W74','W77'],90:['W73','W75'],91:['W76','W78'],92:['W79','W80'],
+  93:['W83','W84'],94:['W81','W82'],95:['W86','W88'],96:['W85','W87'],
+  97:['W89','W90'],98:['W93','W94'],99:['W91','W92'],100:['W95','W96'],
+  101:['W97','W98'],102:['W99','W100'],103:['L101','L102'],104:['W101','W102']
+};
+function koContext(){
+  const byN={}; DATA.matches.forEach(function(m){byN[m.n]=m;});
+  const O=groupOutcomes();
+  return {R:liveResults(), O:O, TA:thirdPlaceAssignment(O), byN:byN, tCache:{}, oCache:{}};
+}
+// Resolve both teams of a knockout match. R32 uses group positions; later rounds
+// chase their feeder matches' winners/losers (recursively, memoised).
+function koResolveTeams(n, ctx){
+  if(ctx.tCache[n]) return ctx.tCache[n];
+  const m=ctx.byN[n], f=KO_FEED[n];
+  const res = f ? {h:koFeedSide(f[0],ctx), a:koFeedSide(f[1],ctx)} : koTeams(m, ctx.O, ctx.TA);
+  ctx.tCache[n]=res; return res;
+}
+function koFeedSide(tok, ctx){
+  const win=tok.charAt(0)==='W', n=+tok.slice(1), oc=koOutcome(n,ctx);
+  return win ? (oc.winner||('Winner M'+n)) : (oc.loser||('Loser M'+n));
+}
+// Winner/loser of a knockout match — only once both teams are real AND the
+// result is decisive. A 90-min/AET draw goes to penalties, whose winner we
+// can't infer from the score, so the next slot stays a label until it's known.
+function koOutcome(n, ctx){
+  if(ctx.oCache[n]) return ctx.oCache[n];
+  ctx.oCache[n]={winner:null,loser:null};          // cycle guard
+  const t=koResolveTeams(n,ctx), r=ctx.R[n];
+  let out={winner:null,loser:null};
+  if(t && isTeam(t.h) && isTeam(t.a) && r && r[0]!==r[1]){
+    out = r[0]>r[1] ? {winner:t.h,loser:t.a} : {winner:t.a,loser:t.h};
+  }
+  ctx.oCache[n]=out; return out;
+}
+
+// Teams we can PROVE are knocked out: the losing side of any decisive knockout
+// match (resolved through the whole bracket). Draws (penalties) and group-stage
+// exits aren't auto-detected, so a pick is only marked "out" when truly gone.
 function eliminatedTeams(){
-  const R=liveResults(), O=groupOutcomes(), TA=thirdPlaceAssignment(O), out=new Set();
-  DATA.matches.filter(isKnk).forEach(function(m){
-    const r=R[m.n]; if(!r) return;
-    const t=koTeams(m,O,TA);
-    if(isTeam(t.h) && isTeam(t.a) && r[0]!==r[1]) out.add(r[0]<r[1]?t.h:t.a);
-  });
+  const ctx=koContext(), out=new Set();
+  DATA.matches.filter(isKnk).forEach(function(m){ const oc=koOutcome(m.n,ctx); if(oc.loser) out.add(oc.loser); });
   return out;
 }
 // How many family members are riding on each team as their Champion pick.
@@ -1051,14 +1086,14 @@ function koAnim(kind,id){ const s=KO_SEEN[kind]; if(s[id]) return ''; s[id]=1; r
 function pickCountForMatch(n){ return (DATA.standings||[]).filter(function(p){ return (p.picks||[]).some(function(pk){ return pk.n===n; }); }).length; }
 
 // LIVE NOW strip: a bold banner for any knockout match currently in play.
-function renderKoLive(O,TA){
+function renderKoLive(ctx){
   const box=document.getElementById('koLiveBox'); if(!box) return;
   const LV=(typeof LIVE!=='undefined'?LIVE:{}), fc=famChampMap();
   const stageName={'Round of 32':'Round of 32','Round of 16':'Round of 16','Quarterfinal':'Quarterfinal','Semifinal':'Semifinal','Third Place':'Third-Place Play-Off','Final':'Final'};
   const live=DATA.matches.filter(isKnk).filter(function(m){ const lv=LV[m.n]; return lv && lv.state==='in' && lv.h!=null && !isNaN(lv.h); });
   if(!live.length){ box.innerHTML=''; return; }
   box.innerHTML=live.map(function(m){
-    const t=koTeams(m,O,TA), lv=LV[m.n];
+    const t=koResolveTeams(m.n,ctx), lv=LV[m.n];
     const champs=(fc[t.h]||0)+(fc[t.a]||0), picks=pickCountForMatch(m.n);
     const stake = champs>0 ? ('🏆 '+champs+' family champion'+(champs>1?'s':'')+' in this one')
       : picks>0 ? ('👀 '+picks+' family pick'+(picks>1?'s':'')+' riding on this game')
@@ -1079,8 +1114,8 @@ function renderBracket(){
   const order=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
   const label={'Round of 32':'Round of 32','Round of 16':'Round of 16','Quarterfinal':'Quarterfinals','Semifinal':'Semifinals','Third Place':'Third Place','Final':'Final'};
   const stages=order.filter(s=>byStage[s]);
-  const R=liveResults(), fc=famChampMap(), O=groupOutcomes(), TA=thirdPlaceAssignment(O);
-  renderKoLive(O,TA);
+  const ctx=koContext(), R=ctx.R, O=ctx.O, TA=ctx.TA, fc=famChampMap();
+  renderKoLive(ctx);
 
   function teamRow(name, score, cls, justIn, animCls){
     const real=isTeam(name);
@@ -1095,8 +1130,8 @@ function renderBracket(){
     '<div class="bkt">'+stages.map(function(st){
       const games=byStage[st].slice().sort((a,b)=>a.n-b.n);
       const cards=games.map(function(m){
-        // Resolve placeholder slots ("Group A Winner", "Group …/… 3rd Place") to real teams once clinched.
-        const _t=koTeams(m,O,TA), hN=_t.h, aN=_t.a;
+        // Resolve every slot — group positions, third-place assignment, and winners advancing through the bracket.
+        const _t=koResolveTeams(m.n,ctx), hN=_t.h, aN=_t.a;
         const hJustIn = !isTeam(m.h) && isTeam(hN);
         const aJustIn = !isTeam(m.a) && isTeam(aN);
         const r=R[m.n], done=!!r;
