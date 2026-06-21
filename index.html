@@ -47,6 +47,7 @@ a{color:inherit}
 .mv.up{color:#0a7d3c} .mv.down{color:#d32f2f} .mv.same{color:#9aa6a0}
 .chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:#eef6f0;color:var(--g2);border:1px solid #d9ece0}
 .chip.alive{background:#e9f9ee;color:#0a7d3c;border-color:#bce8cc}
+.chip.out{background:#fdeaea;color:#c0392b;border-color:#f1c9c9}
 .note{font-size:12.5px;color:var(--muted);background:#fffbe9;border:1px solid #f3e6b0;border-radius:12px;padding:10px 12px;margin-top:12px}
 .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px}
 .badge{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
@@ -521,7 +522,8 @@ function syncStandingsFromResults(){
 }
 function rankStandings(){
   syncStandingsFromResults();
-  const s = DATA.standings.map(x=>({...x, total:x.matchPts}));
+  const ff=finalFour(); // exact-finish bonuses kick in as the final four are decided
+  const s = DATA.standings.map(function(x){ const bonus=podiumBonus(x,ff); return Object.assign({}, x, {bonus:bonus, total:(x.matchPts||0)+bonus}); });
   s.sort((a,b)=> b.total-a.total || b.exact-a.exact || b.correct-a.correct || a.name.localeCompare(b.name));
   let rank=1;
   s.forEach((x,i)=>{ if(i>0 && (x.total<s[i-1].total)) rank=i+1; x.rank=rank; });
@@ -537,18 +539,23 @@ function movement(name, rank){
 }
 function renderLB(){
   const s = rankStandings();
+  let koOut=new Set(); try{ koOut=eliminatedTeams(); }catch(e){}
   document.getElementById('lb').innerHTML = s.map(x=>{
-    const champ = x.champ ? '<span class="chip alive">'+flag(x.champ)+' '+x.champ+' ✓ alive</span>' : '<span class="chip">no champion yet</span>';
+    const alive = x.champ && !koOut.has(x.champ);
+    const champ = x.champ
+      ? '<span class="chip '+(alive?'alive':'out')+'">'+flag(x.champ)+' '+x.champ+(alive?' ✓ alive':' ❌ out')+'</span>'
+      : '<span class="chip">no champion yet</span>';
     const pod = x.podium || {};
     const podline = (pod.run||pod.third||pod.fourth) ? '<div class="podline">'+
         (pod.run?'<span>🥈 '+flag(pod.run)+' '+pod.run+'</span>':'')+
         (pod.third?'<span>🥉 '+flag(pod.third)+' '+pod.third+'</span>':'')+
         (pod.fourth?'<span>🏅 '+flag(pod.fourth)+' '+pod.fourth+'</span>':'')+
       '</div>' : '';
+    const bonusMeta = x.bonus>0 ? ' · <b style="color:var(--gold2)">+'+x.bonus+' bonus</b>' : '';
     return '<div class="lbrow '+(x.rank===1?'r1':'')+'">'+
       '<div class="rk">'+(x.rank===1?'🥇':x.rank)+'</div>'+
       '<div><div class="nm">'+pavatar(x.name,28)+x.name+' '+champ+'</div>'+
-      '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct</div>'+podline+'</div>'+
+      '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct'+bonusMeta+'</div>'+podline+'</div>'+
       '<div class="tot">'+movement(x.name,x.rank)+'<span class="ptsblk">'+x.total+'<small>pts</small></span></div>'+
     '</div>';
   }).join('');
@@ -1198,15 +1205,27 @@ const FINAL_N=104, THIRD_N=103;
 function pickFor(p,n){ return (p.picks||[]).find(function(pk){ return pk.n===n; }); }
 // Project each player's total = match points + exact-finish bonuses
 // (Champion 50, Runner-up 35, 3rd 20, 4th 10), given a final-four outcome.
+// Exact-finish bonus for one player given a final-four outcome
+// (Champion 50, Runner-up 35, 3rd 20, 4th 10 — exact spot only).
+function podiumBonus(p, ff){
+  let b=0; const pod=p.podium||{};
+  if(ff.champion && p.champ===ff.champion) b+=50;
+  if(ff.runnerup && pod.run===ff.runnerup) b+=35;
+  if(ff.third && pod.third===ff.third) b+=20;
+  if(ff.fourth && pod.fourth===ff.fourth) b+=10;
+  return b;
+}
+// The actual final four, resolved from results (each null until decided).
+// Guarded so it's safe to call during early init before the knockout consts load.
+function finalFour(){
+  try{ const ctx=koContext(); const f=koOutcome(FINAL_N,ctx), t=koOutcome(THIRD_N,ctx);
+    return {champion:f.winner, runnerup:f.loser, third:t.winner, fourth:t.loser}; }
+  catch(e){ return {champion:null, runnerup:null, third:null, fourth:null}; }
+}
 function challengeTotals(champion, runnerup, third, fourth){
-  return (DATA.standings||[]).map(function(p){
-    let bonus=0; const pod=p.podium||{};
-    if(champion && p.champ===champion) bonus+=50;
-    if(runnerup && pod.run===runnerup) bonus+=35;
-    if(third && pod.third===third) bonus+=20;
-    if(fourth && pod.fourth===fourth) bonus+=10;
-    return {name:p.name, total:(p.matchPts||0)+bonus, bonus:bonus};
-  }).sort(function(a,b){ return b.total-a.total || a.name.localeCompare(b.name); });
+  const ff={champion:champion, runnerup:runnerup, third:third, fourth:fourth};
+  return (DATA.standings||[]).map(function(p){ const bonus=podiumBonus(p,ff); return {name:p.name, total:(p.matchPts||0)+bonus, bonus:bonus}; })
+    .sort(function(a,b){ return b.total-a.total || a.name.localeCompare(b.name); });
 }
 function leaderLabel(rows){
   if(!rows||!rows.length) return '—';
