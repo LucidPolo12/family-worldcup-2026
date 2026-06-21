@@ -198,6 +198,34 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .bm.bm-upset{animation:koUpset 1.7s ease-in-out 2}
 @keyframes koLivePulse{0%,100%{box-shadow:0 0 0 1px rgba(210,59,44,.35)}50%{box-shadow:0 0 0 3px rgba(210,59,44,.22)}}
 .bm.live{animation:koLivePulse 2s ease-in-out infinite}
+/* ---- Knockout: The Final hero card ---- */
+#koFinalBox:empty{display:none}
+.kofinal{background:linear-gradient(150deg,#3a2a00,#5a3c18 55%,#7a5326);color:#fff;border:2px solid var(--gold2);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);position:relative;overflow:hidden}
+.kofinal .tr0{position:absolute;font-size:120px;opacity:.10;right:-12px;top:-26px;transform:rotate(12deg);pointer-events:none}
+.kofinal .kt0{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);opacity:.95}
+.kofinal h3{margin:2px 0;font-size:20px;font-weight:900}
+.kofinal .sub{font-size:12px;opacity:.85;margin-bottom:12px}
+.kofinal .fin{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:4px}
+.kofinal .fin .tm{font-size:16px;font-weight:900;text-align:center}
+.kofinal .fin .tm .flg{height:22px;display:block;margin:0 auto 5px}
+.kofinal .fin .tm .ph{opacity:.7;font-weight:700}
+.kofinal .fin .mid{font-size:13px;font-weight:900;opacity:.8;text-align:center}
+.kofinal .fin .mid .sc{font-size:26px;display:block}
+.kofinal .champ{margin-top:12px;text-align:center;background:rgba(255,255,255,.1);border:1px solid var(--gold2);border-radius:12px;padding:10px}
+.kofinal .champ .lbl{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.kofinal .champ .nm{font-size:18px;font-weight:900;margin-top:3px}
+.kofinal .preds{margin-top:12px}
+.kofinal .preds .ph0{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);opacity:.9;margin-bottom:5px}
+.kofinal .prow{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;padding:4px 0;border-top:1px solid rgba(255,255,255,.12)}
+.kofinal .prow:first-of-type{border-top:none}
+.kofinal .prow .sc{margin-left:auto;font-weight:900}
+.kofinal .prow .hit{color:#86f7ab}
+.kofinal .fork{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kofinal .fork .opt{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:9px}
+.kofinal .fork .opt .q{font-size:11px;opacity:.85;font-weight:700}
+.kofinal .fork .opt .w{font-size:13.5px;font-weight:900;margin-top:3px;color:var(--gold)}
+.kofinal .stk{margin-top:10px;font-size:11.5px;font-weight:700;opacity:.92}
+@media(max-width:480px){.kofinal .fork{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -304,6 +332,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
     <h2>🌐 Knockout</h2>
     <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28, and each winner carries forward through the rounds all the way to the Final. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
     <div id="koLiveBox"></div>
+    <div id="koFinalBox"></div>
     <div id="aliveBox"></div>
     <div id="bracketGrid"></div>
   </section>
@@ -1085,6 +1114,58 @@ const KO_ANIMCLS={win:'bm-won',inn:'tr-in',ups:'bm-upset'};
 function koAnim(kind,id){ const s=KO_SEEN[kind]; if(s[id]) return ''; s[id]=1; return KO_PRIMED?(' '+KO_ANIMCLS[kind]):''; }
 function pickCountForMatch(n){ return (DATA.standings||[]).filter(function(p){ return (p.picks||[]).some(function(pk){ return pk.n===n; }); }).length; }
 
+// ---- The Final hero card + "who wins the whole challenge" projection.
+const FINAL_N=104, THIRD_N=103;
+function pickFor(p,n){ return (p.picks||[]).find(function(pk){ return pk.n===n; }); }
+// Project each player's total = match points + exact-finish bonuses
+// (Champion 50, Runner-up 35, 3rd 20, 4th 10), given a final-four outcome.
+function challengeTotals(champion, runnerup, third, fourth){
+  return (DATA.standings||[]).map(function(p){
+    let bonus=0; const pod=p.podium||{};
+    if(champion && p.champ===champion) bonus+=50;
+    if(runnerup && pod.run===runnerup) bonus+=35;
+    if(third && pod.third===third) bonus+=20;
+    if(fourth && pod.fourth===fourth) bonus+=10;
+    return {name:p.name, total:(p.matchPts||0)+bonus, bonus:bonus};
+  }).sort(function(a,b){ return b.total-a.total || a.name.localeCompare(b.name); });
+}
+function leaderLabel(rows){
+  if(!rows||!rows.length) return '—';
+  const top=rows[0].total, tied=rows.filter(function(r){return r.total===top;});
+  return tied.map(function(r){return r.name;}).join(' & ')+' · '+top+' pts';
+}
+function renderKoFinal(ctx){
+  const box=document.getElementById('koFinalBox'); if(!box) return;
+  const fin=koResolveTeams(FINAL_N,ctx), oc=koOutcome(FINAL_N,ctx), oc3=koOutcome(THIRD_N,ctx), fr=ctx.R[FINAL_N];
+  const bothKnown=isTeam(fin.h)&&isTeam(fin.a);
+  const champion=oc.winner, runnerup=oc.loser, third=oc3.winner, fourth=oc3.loser;
+  function cell(name){ return isTeam(name)
+    ? '<div class="tm">'+flag(name)+'<span>'+name+'</span></div>'
+    : '<div class="tm"><span class="ph">Finalist TBD</span></div>'; }
+  const mid = fr ? '<div class="mid"><span class="sc">'+fr[0]+'–'+fr[1]+'</span>full time</div>' : '<div class="mid">vs</div>';
+  const head='<div class="tr0">🏆</div><div class="kt0">⭐ The road ends here</div>'+
+             '<h3>🏆 World Cup Final</h3><div class="sub">Sun, Jul 19 · New York / New Jersey · MetLife Stadium</div>';
+  const finRow='<div class="fin">'+cell(fin.h)+mid+cell(fin.a)+'</div>';
+  const out=eliminatedTeams(); let cT=0,cA=0;
+  (DATA.standings||[]).forEach(function(p){ if(p.champ){cT++; if(!out.has(p.champ))cA++;} });
+  let body='';
+  if(champion){
+    body+='<div class="champ"><div class="lbl">👑 Champions of the World</div><div class="nm">'+flag(champion)+' '+champion+'</div></div>'+
+          '<div class="stk">🏆 Challenge winner: <b>'+leaderLabel(challengeTotals(champion,runnerup,third,fourth))+'</b></div>';
+  } else if(bothKnown){
+    body+='<div class="fork">'+
+      '<div class="opt"><div class="q">If '+flag(fin.h)+' '+fin.h+' win</div><div class="w">'+leaderLabel(challengeTotals(fin.h,fin.a,third,fourth))+'</div></div>'+
+      '<div class="opt"><div class="q">If '+flag(fin.a)+' '+fin.a+' win</div><div class="w">'+leaderLabel(challengeTotals(fin.a,fin.h,third,fourth))+'</div></div></div>';
+  } else {
+    body+='<div class="stk">'+(cT?('<b>'+cA+'</b> of '+cT+' family champions still in the hunt to reach this stage.'):'The bracket decides who gets here.')+'</div>';
+  }
+  const preds=(DATA.standings||[]).map(function(p){ const pk=pickFor(p,FINAL_N); if(!pk||pk.ph==null||pk.pa==null) return null;
+    let hit=''; if(fr){ if(pk.ph===fr[0]&&pk.pa===fr[1]) hit=' <span class="hit">✓ exact</span>'; else if(Math.sign(pk.ph-pk.pa)===Math.sign(fr[0]-fr[1])) hit=' <span class="hit">✓</span>'; }
+    return '<div class="prow">'+pavatar(p.name,22)+'<span>'+p.name+'</span><span class="sc">'+pk.ph+'–'+pk.pa+hit+'</span></div>';
+  }).filter(Boolean).join('');
+  box.innerHTML='<div class="kofinal">'+head+finRow+body+(preds?'<div class="preds"><div class="ph0">Family score predictions</div>'+preds+'</div>':'')+'</div>';
+}
+
 // LIVE NOW strip: a bold banner for any knockout match currently in play.
 function renderKoLive(ctx){
   const box=document.getElementById('koLiveBox'); if(!box) return;
@@ -1116,6 +1197,7 @@ function renderBracket(){
   const stages=order.filter(s=>byStage[s]);
   const ctx=koContext(), R=ctx.R, O=ctx.O, TA=ctx.TA, fc=famChampMap();
   renderKoLive(ctx);
+  renderKoFinal(ctx);
 
   function teamRow(name, score, cls, justIn, animCls){
     const real=isTeam(name);
