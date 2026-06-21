@@ -246,6 +246,9 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .pm-won{background:#0a7d3c;color:#fff}
 .pm-out{background:#c0392b;color:#fff}
 .pm-now{background:var(--gold2);color:#3a2a00}
+/* ---- Knockout: shareable daily card button ---- */
+.koshare{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(180deg,var(--gold),var(--gold2));color:#3a2a00;font-weight:900;border:none;border-radius:12px;padding:11px 16px;font-size:14px;box-shadow:0 4px 12px rgba(244,169,0,.35);cursor:pointer;margin-bottom:14px}
+.koshare:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
@@ -351,6 +354,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <section class="sec" id="bracket">
     <h2>🌐 Knockout</h2>
     <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28, and each winner carries forward through the rounds all the way to the Final. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
+    <button class="koshare" onclick="shareDailyCard()">📸 Share today's update</button>
     <div id="koLiveBox"></div>
     <div id="koFinalBox"></div>
     <div id="aliveBox"></div>
@@ -1261,6 +1265,64 @@ function renderKoLive(ctx){
         '<span class="tm a">'+(isTeam(t.a)?t.a:'TBD')+' '+flag(t.a)+'</span></div>'+
       '<div class="stake">'+stake+'</div></div>';
   }).join('');
+}
+
+// ---- Shareable daily card: a clean PNG for the family chat (latest results
+// day's biggest upset, family champions advancing/alive, leaderboard top 3).
+function dailyCardData(){
+  const R=liveResults(), ctx=koContext();
+  const finished=DATA.matches.filter(function(m){return R[m.n];});
+  const latestDate=finished.length?finished.map(function(m){return m.date;}).sort()[finished.length-1]:null;
+  const day=finished.filter(function(m){return m.date===latestDate;});
+  let upset=null, bestGap=0.12;
+  day.forEach(function(m){
+    const p=(DATA.probs||{})[m.n]||(DATA.probs||{})[String(m.n)], r=R[m.n], t=koResolveTeams(m.n,ctx);
+    if(!p||!r||r[0]===r[1]||!isTeam(t.h)||!isTeam(t.a)) return;
+    const homeWon=r[0]>r[1], gap=homeWon?(p.a-p.h):(p.h-p.a);
+    if(gap>bestGap){ bestGap=gap; upset={win:homeWon?t.h:t.a, lose:homeWon?t.a:t.h, sc:r[0]+'–'+r[1]}; }
+  });
+  const champTeams=new Set((DATA.standings||[]).map(function(p){return p.champ;}).filter(Boolean));
+  const adv=[];
+  day.filter(isKnk).forEach(function(m){ const oc=koOutcome(m.n,ctx); if(oc.winner&&champTeams.has(oc.winner)&&adv.indexOf(oc.winner)<0) adv.push(oc.winner); });
+  const out=eliminatedTeams(); let cT=0,cA=0; (DATA.standings||[]).forEach(function(p){ if(p.champ){cT++; if(!out.has(p.champ))cA++;} });
+  let lb=[]; try{ lb=rankStandings().slice(0,3); }catch(e){ lb=(DATA.standings||[]).slice().sort(function(a,b){return (b.matchPts||0)-(a.matchPts||0);}).slice(0,3).map(function(p,i){return {name:p.name,total:p.matchPts||0};}); }
+  return {latestDate:latestDate, upset:upset, adv:adv, cT:cT, cA:cA, lb:lb};
+}
+function drawDailyCard(canvas){
+  const d=dailyCardData(), W=720,H=900, g=canvas.getContext('2d');
+  canvas.width=W; canvas.height=H;
+  const FS="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+  g.fillStyle='#0a7d3c'; g.fillRect(0,0,W,H);
+  g.fillStyle='#ffffff'; g.fillRect(18,18,W-36,H-36);
+  g.fillStyle='#0a7d3c'; g.fillRect(18,18,W-36,132);
+  g.textBaseline='top';
+  g.fillStyle='#ffcf33'; g.font='700 20px '+FS; g.fillText('⚽ FAMILY WORLD CUP 2026',44,46);
+  g.fillStyle='#ffffff'; g.font='800 36px '+FS; g.fillText('Knockout Update',44,76);
+  g.fillStyle='rgba(255,255,255,.92)'; g.font='600 17px '+FS; g.fillText(d.latestDate?fmtD(d.latestDate):'',44,120);
+  let y=188;
+  function wrap(txt,maxw){ const words=String(txt).split(' '); let cur=''; words.forEach(function(w){ const t=cur?cur+' '+w:w; if(g.measureText(t).width>maxw && cur){ g.fillText(cur,44,y); y+=32; cur=w; } else cur=t; }); if(cur){ g.fillText(cur,44,y); y+=32; } }
+  function label(txt,color){ g.fillStyle=color||'#b06a00'; g.font='800 16px '+FS; g.fillText(txt,44,y); y+=28; }
+  function big(txt){ g.fillStyle='#13261b'; g.font='800 24px '+FS; wrap(txt,W-88); }
+  function line(txt){ g.fillStyle='#2a3a30'; g.font='600 19px '+FS; wrap(txt,W-88); }
+  if(d.upset){ label('🚨 UPSET OF THE DAY','#c0392b'); big(d.upset.win+' stun '+d.upset.lose+'  '+d.upset.sc); y+=16; }
+  if(d.adv.length){ label('🎉 FAMILY CHAMPIONS ADVANCING'); line(d.adv.join('  ·  ')); y+=16; }
+  label('🟢 STILL STANDING'); line(d.cA+' of '+d.cT+' family champions still alive'); y+=16;
+  label('🥇 LEADERBOARD'); d.lb.forEach(function(p,i){ line((i+1)+'.   '+p.name+'   —   '+(p.total!=null?p.total:p.matchPts||0)+' pts'); });
+  g.fillStyle='#6a7a70'; g.font='600 15px '+FS; g.fillText('family-worldcup-2026.pages.dev',44,H-58);
+}
+function shareDailyCard(){
+  try{
+    const canvas=document.createElement('canvas'); drawDailyCard(canvas);
+    canvas.toBlob(function(blob){
+      if(!blob) return;
+      const file=new File([blob],'family-wc-update.png',{type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:'Family World Cup Update'}).catch(function(){});
+      } else {
+        const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download='family-wc-update.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1500);
+      }
+    },'image/png');
+  }catch(e){ alert('Could not create the image on this device.'); }
 }
 
 function renderBracket(){
