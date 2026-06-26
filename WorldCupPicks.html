@@ -83,12 +83,14 @@
   <div class="tabbar">
     <button class="tabbtn active" id="tabMatches" data-tab="matches">⚽ Match Picks</button>
     <button class="tabbtn" id="tabPodium" data-tab="podium">🏆 Champion &amp; Podium</button>
+    <button class="tabbtn" id="tabGoldenBoot" data-tab="goldenboot">🥇 Golden Boot</button>
   </div>
   <div id="panelMatches">
     <div class="chips" id="chips"></div>
     <div id="list"></div>
   </div>
   <div id="panelPodium" style="display:none"></div>
+  <div id="panelGoldenBoot" style="display:none"></div>
 </div>
 
 <div class="bar">
@@ -339,19 +341,77 @@ function submitPodium(){
   modal.classList.add("show");
 }
 
+// ===== Golden Boot tab =====
+if(!state.goldenBoot) state.goldenBoot = {pick1:"", pick2:"", pick3:""};
+const GB_LOCK = new Date("2026-07-09T20:00:00Z"); // first QF kickoff: Thu Jul 9 4:00 PM ET
+const GB_LOCK_LABEL = "Thu, Jul 9 · 4:00 PM ET (Quarterfinal kickoff)";
+function gbPhase(){ return Date.now() >= GB_LOCK.getTime() ? "locked" : "open"; }
+
+const panelGoldenBoot = document.getElementById("panelGoldenBoot");
+function renderGoldenBoot(){
+  const locked = gbPhase() === "locked";
+  const gb = state.goldenBoot;
+  const lockNote = locked
+    ? ' <span class="soonpill">🔒 LOCKED</span>'
+    : ' <span class="openpill">OPEN</span>';
+  let html = '<div class="pintro">Pick the tournament\'s <b>top 3 scorers</b> for bonus points! '
+    + '🥇 Pick 1 as the exact Golden Boot winner = <b>40 pts</b>. '
+    + 'Pick 1 in top 3 (not #1) = <b>10 pts</b>. Pick 2 or 3 as Golden Boot winner = <b>20 pts</b>. '
+    + 'Pick 2 or 3 in top 3 = <b>10 pts</b>. Max <b>60 pts</b>. '
+    + 'Locks at <b>' + GB_LOCK_LABEL + '</b>.' + lockNote + '</div>';
+  [['pick1','🥇 Pick 1 — Golden Boot winner'],['pick2','🥈 Pick 2 — 2nd top scorer'],['pick3','🥉 Pick 3 — 3rd top scorer']].forEach(function(pair){
+    const key=pair[0], label=pair[1];
+    html += '<div class="pcard' + (locked?' lockedrow':'') + '">'
+      + '<div class="pl">' + label + '</div>'
+      + '<input type="text" data-gbkey="' + key + '" value="' + (gb[key]||'') + '" placeholder="Player name"'
+      + (locked?' disabled':'') + ' style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-weight:700;margin-top:6px;box-sizing:border-box">'
+      + '</div>';
+  });
+  if(!locked) html += '<button class="btn" id="gbSubmit" style="width:100%;margin-top:8px">Submit Golden Boot picks ✅</button>';
+  panelGoldenBoot.innerHTML = html;
+  panelGoldenBoot.querySelectorAll("input[data-gbkey]").forEach(function(inp){
+    inp.oninput = function(){ state.goldenBoot[inp.dataset.gbkey] = inp.value.trim(); save(); };
+  });
+  const gs = document.getElementById("gbSubmit");
+  if(gs) gs.onclick = submitGoldenBoot;
+}
+function buildGoldenBootText(){
+  const gb=state.goldenBoot, who=state.name||"(no name!)";
+  return ["⚽ Family WC — Golden Boot Picks — "+who,
+    "🥇 Pick 1: "+(gb.pick1||"—"),
+    "🥈 Pick 2: "+(gb.pick2||"—"),
+    "🥉 Pick 3: "+(gb.pick3||"—")].join("\n");
+}
+function submitGoldenBoot(){
+  if(!state.name){ alert("Pick your name at the top first! 😊"); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  const gb = state.goldenBoot;
+  if(!gb.pick1){ alert("Enter at least your Pick 1 (Golden Boot winner)! 🥇"); return; }
+  const payload = { name: state.name, type:"goldenBoot", goldenBoot: gb };
+  const live = SCRIPT_URL && SCRIPT_URL.indexOf("PASTE_")<0;
+  if(live){ try{ fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(){},function(){}); }catch(e){} }
+  out.value = buildGoldenBootText();
+  document.getElementById("sheetTitle").textContent = "Your Golden Boot picks ⚽";
+  document.getElementById("sheetHint").innerHTML = "Tap <b>Copy</b>, then send to Marco / the family chat. You can change these any time until " + GB_LOCK_LABEL + ".";
+  modal.classList.add("show");
+}
+
 // ===== Tab switching =====
 const panelMatches=document.getElementById("panelMatches"), barEl=document.querySelector(".bar");
 function setTab(t){
-  const m=(t==="matches");
+  const m=(t==="matches"), p=(t==="podium"), g=(t==="goldenboot");
   document.getElementById("tabMatches").classList.toggle("active",m);
-  document.getElementById("tabPodium").classList.toggle("active",!m);
+  document.getElementById("tabPodium").classList.toggle("active",p);
+  document.getElementById("tabGoldenBoot").classList.toggle("active",g);
   panelMatches.style.display=m?"":"none";
-  panelPodium.style.display=m?"none":"";
-  barEl.style.display=m?"":"none"; // bottom Submit bar belongs to match picks only
-  if(!m) renderPodium();
+  panelPodium.style.display=p?"":"none";
+  panelGoldenBoot.style.display=g?"":"none";
+  barEl.style.display=m?"":"none";
+  if(p) renderPodium();
+  if(g) renderGoldenBoot();
 }
 document.getElementById("tabMatches").onclick=()=>setTab("matches");
 document.getElementById("tabPodium").onclick=()=>setTab("podium");
+document.getElementById("tabGoldenBoot").onclick=()=>setTab("goldenboot");
 
 renderChips(); renderList(); setTab("matches");
 // Re-render every 30s so games lock automatically the moment they kick off,

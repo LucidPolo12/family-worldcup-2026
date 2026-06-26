@@ -48,6 +48,14 @@ function doPost(e) {
           if (pair[1]) rows.push([now, name, pair[0], pair[1], '']);
         });
     }
+    // Golden Boot picks (top scorer predictions). Stored as GB1/GB2/GB3 in the match column.
+    var gb = data.goldenBoot;
+    if (gb) {
+      [['GB1', gb.pick1], ['GB2', gb.pick2], ['GB3', gb.pick3]]
+        .forEach(function (pair) {
+          if (pair[1]) rows.push([now, name, pair[0], pair[1], '']);
+        });
+    }
     if (rows.length) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
       triggerPublish_();   // tell GitHub to publish now (best-effort)

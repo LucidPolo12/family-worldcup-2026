@@ -61,6 +61,37 @@ def pts(ph, pa, ah, aa, n=1):
     sign = lambda x, y: (x > y) - (x < y)
     return (correct_pts if sign(ph, pa) == sign(ah, aa) else 0), False
 
+def score_golden_boot(gb, top_scorers):
+    """Score Golden Boot picks against the official top-3 scorer list.
+
+    top_scorers: list of player names in rank order (index 0 = Golden Boot winner).
+    Scoring: pick1 exact (rank 1) = 40pts; pick1 in top-3 = 10pts;
+             pick2/3 hits rank-1 = 20pts; pick2/3 in top-3 = 10pts.
+    Returns 0 if top_scorers not yet populated.
+    """
+    if not top_scorers or not gb:
+        return 0
+    total = 0
+    for pick_pos, pick_key in enumerate(["pick1", "pick2", "pick3"], 1):
+        player = gb.get(pick_key, "").strip()
+        if not player:
+            continue
+        try:
+            actual_rank = top_scorers.index(player) + 1   # 1-based
+        except ValueError:
+            continue   # player not in top scorers list
+        if actual_rank > 3:
+            continue   # only top 3 count
+        if pick_pos == 1 and actual_rank == 1:
+            total += 40   # nailed the Golden Boot winner exactly
+        elif pick_pos == 1:
+            total += 10   # pick1 got a top-3 scorer (not #1)
+        elif actual_rank == 1:
+            total += 20   # pick2/3 named the actual Golden Boot winner
+        else:
+            total += 10   # pick2/3 got a top-3 scorer
+    return total
+
 def main():
     wb = openpyxl.load_workbook(XLSX)
     ws = wb["Match Predictions"]
@@ -105,6 +136,18 @@ def main():
     mres = {n: (results[n][0], results[n][1]) if n in results else (None, None)
             for n in range(1, 105)}
 
+    # Load existing data.json early: need topScorers before the standings loop,
+    # and probs + rank snapshots for the output.
+    old = {}
+    if os.path.exists(OUT):
+        try:
+            with open(OUT, encoding="utf-8") as f:
+                old = json.load(f) or {}
+        except Exception:
+            old = {}
+    probs = old.get("probs", {}) or {}
+    top_scorers = old.get("topScorers") or []
+
     standings = []
     for name, hc, ac in PCOLS:
         picks, mp, ex, cor = [], 0, 0, 0
@@ -128,19 +171,11 @@ def main():
         # Champion & Podium picks, auto-synced from Google Sheet via fetch_picks.py.
         podium = pj.get("podium") or {}
         champ = podium.get("champ") or CHAMPS.get(name)
+        gb = pj.get("goldenBoot") or {}
+        gb_pts = score_golden_boot(gb, top_scorers)
         standings.append({"name": name, "matchPts": mp, "exact": ex, "correct": cor,
-                          "champ": champ, "podium": podium,
+                          "champ": champ, "podium": podium, "goldenBoot": gb, "gbPts": gb_pts,
                           "photo": PHOTOS.get(name), "picks": picks})
-
-    # Load existing data.json: keep probabilities and rank snapshots.
-    old = {}
-    if os.path.exists(OUT):
-        try:
-            with open(OUT, encoding="utf-8") as f:
-                old = json.load(f) or {}
-        except Exception:
-            old = {}
-    probs = old.get("probs", {}) or {}
 
     # Day-over-day movement: prevRanks is yesterday's final ranks; ranksToday
     # is the current run. Multiple runs the same day keep the same baseline.
@@ -160,6 +195,7 @@ def main():
         "prevRanks": prev_ranks,
         "ranksToday": {"date": today_str, "ranks": cur_ranks},
         "stagePts": {k: {"correct": v[0], "exact": v[1]} for k, v in STAGE_PTS.items()},
+        "topScorers": top_scorers,
     }
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)

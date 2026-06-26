@@ -75,9 +75,15 @@ def main():
     # All four lock at noon CDT on Sun, Jun 28 2026 (= 1:00 PM EDT = 17:00 UTC).
     PODIUM_LOCK = datetime.datetime(2026, 6, 28, 17, 0, tzinfo=datetime.timezone.utc)
 
+    # Golden Boot picks: GB1 = top scorer pick, GB2 = second, GB3 = third.
+    # Lock at first Quarterfinal kickoff: Thu Jul 9 4:00 PM ET = 20:00 UTC.
+    GB_CODES = {"GB1": "pick1", "GB2": "pick2", "GB3": "pick3"}
+    GB_LOCK = datetime.datetime(2026, 7, 9, 20, 0, tzinfo=datetime.timezone.utc)
+
     # latest valid pick per (name, match)
     latest = {}      # (name, n) -> (ts, [h, a])
     podium = {}      # (name, field) -> (ts, team)
+    golden_boot = {} # (name, field) -> (ts, player_name)
     for r in rows[1:]:
         try:
             name = r[ci["name"]].strip()
@@ -98,6 +104,17 @@ def main():
                 continue
             podium[(name, PODIUM_CODES[code])] = (ts, team)  # append order: last wins
             continue
+        if code in GB_CODES:
+            try:
+                player = r[ci["predh"]].strip()
+            except (IndexError, AttributeError):
+                continue
+            if not player:
+                continue
+            if ts and ts >= GB_LOCK:
+                continue
+            golden_boot[(name, GB_CODES[code])] = (ts, player)
+            continue
         try:
             n = int(float(mraw))
             ph = int(float(r[ci["predh"]])); pa = int(float(r[ci["preda"]]))
@@ -115,11 +132,14 @@ def main():
         picks.setdefault(name, {})[str(n)] = score
     for (name, field), (ts, team) in podium.items():
         picks.setdefault(name, {}).setdefault("podium", {})[field] = team
+    for (name, field), (ts, player) in golden_boot.items():
+        picks.setdefault(name, {}).setdefault("goldenBoot", {})[field] = player
 
     json.dump(picks, open(OUT, "w", encoding="utf-8"), ensure_ascii=False)
-    total = sum(len(v) - (1 if "podium" in v else 0) for v in picks.values())
+    total = sum(len(v) - ("podium" in v) - ("goldenBoot" in v) for v in picks.values())
     pod_n = sum(1 for v in picks.values() if v.get("podium"))
-    print(f"Ingested {total} match picks + {pod_n} podium cards across {len(picks)} players -> picks.json")
+    gb_n  = sum(1 for v in picks.values() if v.get("goldenBoot"))
+    print(f"Ingested {total} match picks + {pod_n} podium cards + {gb_n} golden boot cards across {len(picks)} players -> picks.json")
 
 if __name__ == "__main__":
     main()

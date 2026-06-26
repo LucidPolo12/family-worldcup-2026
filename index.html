@@ -258,6 +258,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <a href="#standings">🏆 Standings</a>
   <a href="#today">📅 Today</a>
   <a href="#badges">🎖️ Badges</a>
+  <a href="#goldenboot">⚽ Golden Boot</a>
   <a href="#players">👥 Our Picks</a>
   <a href="#fancam">🎽 Fan Cam</a>
   <a href="#matches">⚽ Matches</a>
@@ -303,6 +304,12 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
     <h2>🎖️ Family Badges</h2>
     <p class="lead">Bragging rights, automatically tracked.</p>
     <div class="badges" id="badgeGrid"></div>
+  </section>
+
+  <section class="sec" id="goldenboot">
+    <h2>⚽ Golden Boot Picks</h2>
+    <p class="lead">Who will be the tournament's top scorer? Picks lock at the first Quarterfinal kickoff (Thu, Jul 9 · 4:00 PM ET).</p>
+    <div id="goldenBootGrid"></div>
   </section>
 
   <section class="sec" id="players">
@@ -650,6 +657,65 @@ function renderBadges(){
   ).join('');
 }
 renderBadges();
+
+function renderGoldenBoot(){
+  const el = document.getElementById('goldenBootGrid');
+  if(!el) return;
+  const GB_LOCK = new Date("2026-07-09T20:00:00Z");
+  const locked = Date.now() >= GB_LOCK.getTime();
+  const topScorers = DATA.topScorers || [];
+  const resultsKnown = topScorers.length > 0;
+
+  // Build per-player card
+  const rows = (DATA.standings||[]).map(function(p){
+    const gb = p.goldenBoot || {};
+    const hasPicks = gb.pick1 || gb.pick2 || gb.pick3;
+    const gbPts = p.gbPts || 0;
+
+    function pickLine(key, medal, label){
+      const name = gb[key] || '';
+      if(!locked && !name) return '';
+      if(locked && !name) return '<div class="prow"><span style="opacity:.5">'+medal+' '+label+'</span><span style="opacity:.4">—</span></div>';
+      let badge = '';
+      if(resultsKnown && name){
+        const rank = topScorers.indexOf(name); // 0-based, -1 if not found
+        if(rank === 0) badge = ' 🥇';
+        else if(rank === 1) badge = ' 🥈';
+        else if(rank === 2) badge = ' 🥉';
+        else badge = ' ❌';
+      }
+      return '<div class="prow"><span>'+medal+' '+name+'</span><span class="sc">'+badge+'</span></div>';
+    }
+
+    let content;
+    if(!locked){
+      content = '<div style="font-size:12px;opacity:.6;font-style:italic">🔒 Picks hidden until Jul 9 lockout</div>';
+    } else if(!hasPicks){
+      content = '<div style="font-size:12px;opacity:.6;font-style:italic">No picks submitted</div>';
+    } else {
+      content = pickLine('pick1','🥇','Golden Boot')+pickLine('pick2','🥈','2nd scorer')+pickLine('pick3','🥉','3rd scorer');
+      if(resultsKnown) content += '<div class="prow" style="border-top:1px solid rgba(255,255,255,.15);margin-top:4px;padding-top:4px"><span style="font-weight:900;color:var(--gold)">Golden Boot pts</span><span class="sc" style="color:var(--gold)">'+gbPts+'</span></div>';
+    }
+    return '<div class="kofinal" style="margin-bottom:10px">'
+      + '<div class="kt0">'+pavatar(p.name,18)+' '+p.name+'</div>'
+      + '<div class="preds" style="margin-top:8px">'+content+'</div>'
+      + '</div>';
+  }).join('');
+
+  let header = '';
+  if(resultsKnown){
+    header = '<div style="background:rgba(255,200,0,.12);border:1px solid var(--gold2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px;font-weight:700">'
+      + '🏆 Official top scorers: '
+      + topScorers.slice(0,3).map(function(n,i){ return ['🥇','🥈','🥉'][i]+' '+n; }).join(' · ')
+      + '</div>';
+  } else if(locked){
+    header = '<div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:10px">⏳ Top scorers will appear here after the Final (Jul 19).</div>';
+  }
+
+  el.innerHTML = header + rows;
+}
+renderGoldenBoot();
+
 
 function renderPlayers(){
   const s = rankStandings();
@@ -1369,6 +1435,85 @@ function shareDailyCard(){
   }catch(e){ alert('Could not create the image on this device.'); }
 }
 
+/* ── Bracket SVG connector lines ─────────────────────────────────── */
+function drawBracketConnectors(){
+  const bkt=document.querySelector('.bkt');
+  if(!bkt) return;
+  const old=bkt.querySelector('.bkt-svg');
+  if(old) old.remove();
+
+  // Position of an element relative to the .bkt scrollable area
+  function relPos(el){
+    let top=0,left=0,e=el;
+    while(e&&e!==bkt){top+=e.offsetTop;left+=e.offsetLeft;e=e.offsetParent;}
+    return {top,left,w:el.offsetWidth,h:el.offsetHeight};
+  }
+
+  const koM=DATA.matches.filter(isKnk);
+  const byStage={};
+  koM.forEach(function(m){(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
+
+  // Build (from1, from2) → to pairs by positional bracket ordering
+  const stageFlow=[
+    ['Round of 32','Round of 16'],
+    ['Round of 16','Quarterfinal'],
+    ['Quarterfinal','Semifinal'],
+    ['Semifinal','Final'],
+  ];
+  const pairs=[];
+  stageFlow.forEach(function(s){
+    const src=(byStage[s[0]]||[]).slice().sort((a,b)=>a.n-b.n);
+    const dst=(byStage[s[1]]||[]).slice().sort((a,b)=>a.n-b.n);
+    for(let i=0;i<dst.length;i++){
+      if(src[i*2]&&src[i*2+1]) pairs.push({a:src[i*2].n,b:src[i*2+1].n,c:dst[i].n});
+    }
+  });
+  // SF losers → Third Place
+  const sf=(byStage['Semifinal']||[]).slice().sort((a,b)=>a.n-b.n);
+  const tp=(byStage['Third Place']||[]);
+  if(sf.length===2&&tp.length===1) pairs.push({a:sf[0].n,b:sf[1].n,c:tp[0].n,dashed:true});
+
+  // Ensure .bkt is the offsetParent for its children before measuring
+  bkt.style.position='relative';
+
+  const svgNS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(svgNS,'svg');
+  svg.classList.add('bkt-svg');
+  svg.setAttribute('width',bkt.scrollWidth);
+  svg.setAttribute('height',bkt.scrollHeight);
+  svg.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:0;overflow:visible';
+
+  pairs.forEach(function(pair){
+    const ea=document.getElementById('bm-'+pair.a);
+    const eb=document.getElementById('bm-'+pair.b);
+    const ec=document.getElementById('bm-'+pair.c);
+    if(!ea||!eb||!ec) return;
+    const ra=relPos(ea),rb=relPos(eb),rc=relPos(ec);
+    const x1=ra.left+ra.w, y1=ra.top+ra.h/2;
+    const x2=rb.left+rb.w, y2=rb.top+rb.h/2;
+    const xd=rc.left,      yd=rc.top+rc.h/2;
+    const xm=(Math.max(x1,x2)+xd)/2;
+    const ym=(y1+y2)/2;
+    const col=pair.dashed?'rgba(160,120,40,0.35)':'rgba(176,120,0,0.45)';
+    const sw=pair.dashed?'1.5':'2';
+    const da=pair.dashed?'5,4':'';
+    function seg(d){
+      const p=document.createElementNS(svgNS,'path');
+      p.setAttribute('d',d);p.setAttribute('fill','none');
+      p.setAttribute('stroke',col);p.setAttribute('stroke-width',sw);
+      p.setAttribute('stroke-linecap','round');
+      if(da) p.setAttribute('stroke-dasharray',da);
+      svg.appendChild(p);
+    }
+    seg('M'+x1+','+y1+' H'+xm+' V'+ym);
+    seg('M'+x2+','+y2+' H'+xm+' V'+ym);
+    seg('M'+xm+','+ym+' H'+xd);
+  });
+
+  bkt.insertBefore(svg,bkt.firstChild);
+}
+window.addEventListener('resize',function(){setTimeout(drawBracketConnectors,50);});
+
 function renderBracket(){
   renderAlive();
   const byStage={};
@@ -1428,7 +1573,7 @@ function renderBracket(){
         const status = done ? '<span class="kt">Full time</span>'
           : hasLive ? '<span class="lv">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'
           : '<span class="kt">'+(koLocal(m.n,m.date)||'TBD')+'</span>';
-        return '<div class="bm'+(hasLive?' live':'')+(famHot?' fam':'')+wonCls+upsCls+pathCls+'">'+
+        return '<div class="bm'+(hasLive?' live':'')+(famHot?' fam':'')+wonCls+upsCls+pathCls+'" id="bm-'+m.n+'">'+
           (upset?'<span class="ups">🚨 UPSET</span>':'')+pmk+
           teamRow(hN, hs, hCls, hJustIn, hAnim)+
           teamRow(aN, as, aCls, aJustIn, aAnim)+
@@ -1438,6 +1583,7 @@ function renderBracket(){
       return '<div class="bcol"><div class="rh"><span>'+(label[st]||st)+'</span><span class="ct">'+cnt+'</span></div>'+cards+'</div>';
     }).join('')+'</div>';
   KO_PRIMED=true; // after the first paint, future changes animate
+  setTimeout(drawBracketConnectors, 0); // draw SVG lines after DOM paint
 }
 renderBracket();
 
@@ -1500,4 +1646,38 @@ DATA.standings = [{"name": "Ewan", "matchPts": 11, "exact": 1, "correct": 2, "ch
 DATA.generated = "2026-06-12";
 /* ---- refreshed 6/12 results + standings (overrides the line above) ---- */
 DATA.standings = [{"name": "Ewan", "matchPts": 14, "exact": 1, "correct": 3, "champ": "Spain", "photo": null, "picks": [{"n": 1, "ph": 3, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 2, "pa": 1, "pts": 0}, {"n": 4, "ph": 2, "pa": 0, "pts": 3}, {"n": 5, "ph": 0, "pa": 2, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 2, "pts": null}, {"n": 8, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Nana", "matchPts": 14, "exact": 1, "correct": 3, "champ": "France", "photo": "nana-bobblehead.jpg", "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 2, "pa": 0, "pts": 3}]}, {"name": "Emrys", "matchPts": 9, "exact": 0, "correct": 3, "champ": null, "photo": "emrys-bobblehead.jpg", "picks": [{"n": 1, "ph": 1, "pa": 0, "pts": 3}, {"n": 2, "ph": 3, "pa": 1, "pts": 3}, {"n": 3, "ph": 2, "pa": 2, "pts": 3}, {"n": 4, "ph": 1, "pa": 2, "pts": 0}]}, {"name": "Nonno", "matchPts": 14, "exact": 1, "correct": 3, "champ": "Brazil", "photo": "nonno-bobblehead.jpg", "picks": [{"n": 1, "ph": 3, "pa": 0, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 3, "pa": 1, "pts": 3}, {"n": 5, "ph": 0, "pa": 4, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 4, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 7, "pa": 0, "pts": null}, {"n": 10, "ph": 2, "pa": 1, "pts": null}]}, {"name": "Nonna", "matchPts": 11, "exact": 1, "correct": 2, "champ": null, "photo": "nonna-bobblehead.jpg", "picks": [{"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 0, "pts": 0}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}, {"name": "Boompa", "matchPts": 0, "exact": 0, "correct": 0, "champ": "France", "photo": null, "picks": [{"n": 1, "ph": 0, "pa": 1, "pts": 0}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 3, "pa": 0, "pts": 0}, {"n": 4, "ph": 1, "pa": 1, "pts": 0}, {"n": 5, "ph": 0, "pa": 1, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 1, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 3, "pa": 0, "pts": null}, {"n": 10, "ph": 1, "pa": 1, "pts": null}, {"n": 11, "ph": 1, "pa": 2, "pts": null}, {"n": 12, "ph": 0, "pa": 1, "pts": null}, {"n": 13, "ph": 3, "pa": 0, "pts": null}, {"n": 14, "ph": 3, "pa": 2, "pts": null}, {"n": 15, "ph": 1, "pa": 1, "pts": null}, {"n": 16, "ph": 0, "pa": 0, "pts": null}, {"n": 17, "ph": 3, "pa": 0, "pts": null}, {"n": 18, "ph": 0, "pa": 3, "pts": null}, {"n": 19, "ph": 2, "pa": 0, "pts": null}, {"n": 20, "ph": 1, "pa": 0, "pts": null}, {"n": 21, "ph": 2, "pa": 0, "pts": null}, {"n": 22, "ph": 3, "pa": 1, "pts": null}, {"n": 23, "ph": 1, "pa": 1, "pts": null}, {"n": 24, "ph": 0, "pa": 2, "pts": null}, {"n": 25, "ph": 0, "pa": 0, "pts": null}, {"n": 26, "ph": 1, "pa": 1, "pts": null}, {"n": 27, "ph": 2, "pa": 1, "pts": null}, {"n": 28, "ph": 2, "pa": 2, "pts": null}, {"n": 29, "ph": 1, "pa": 1, "pts": null}, {"n": 30, "ph": 2, "pa": 0, "pts": null}, {"n": 31, "ph": 2, "pa": 0, "pts": null}, {"n": 32, "ph": 3, "pa": 1, "pts": null}, {"n": 33, "ph": 1, "pa": 1, "pts": null}, {"n": 34, "ph": 2, "pa": 0, "pts": null}, {"n": 35, "ph": 1, "pa": 1, "pts": null}, {"n": 36, "ph": 1, "pa": 2, "pts": null}, {"n": 37, "ph": 3, "pa": 1, "pts": null}, {"n": 38, "ph": 2, "pa": 0, "pts": null}, {"n": 39, "ph": 1, "pa": 1, "pts": null}, {"n": 40, "ph": 1, "pa": 2, "pts": null}, {"n": 41, "ph": 2, "pa": 1, "pts": null}, {"n": 42, "ph": 3, "pa": 0, "pts": null}, {"n": 43, "ph": 1, "pa": 0, "pts": null}, {"n": 44, "ph": 1, "pa": 1, "pts": null}, {"n": 45, "ph": 2, "pa": 0, "pts": null}, {"n": 46, "ph": 2, "pa": 0, "pts": null}, {"n": 47, "ph": 1, "pa": 1, "pts": null}, {"n": 48, "ph": 1, "pa": 0, "pts": null}, {"n": 49, "ph": 1, "pa": 2, "pts": null}, {"n": 50, "ph": 1, "pa": 1, "pts": null}, {"n": 51, "ph": 2, "pa": 3, "pts": null}, {"n": 52, "ph": 1, "pa": 1, "pts": null}, {"n": 53, "ph": 3, "pa": 1, "pts": null}, {"n": 54, "ph": 2, "pa": 0, "pts": null}, {"n": 55, "ph": 1, "pa": 3, "pts": null}, {"n": 56, "ph": 1, "pa": 1, "pts": null}, {"n": 57, "ph": 0, "pa": 2, "pts": null}, {"n": 58, "ph": 2, "pa": 2, "pts": null}, {"n": 59, "ph": 0, "pa": 3, "pts": null}, {"n": 60, "ph": 0, "pa": 2, "pts": null}, {"n": 61, "ph": 1, "pa": 2, "pts": null}, {"n": 62, "ph": 0, "pa": 2, "pts": null}, {"n": 63, "ph": 0, "pa": 2, "pts": null}, {"n": 64, "ph": 0, "pa": 1, "pts": null}, {"n": 65, "ph": 0, "pa": 2, "pts": null}, {"n": 66, "ph": 3, "pa": 0, "pts": null}, {"n": 67, "ph": 0, "pa": 2, "pts": null}, {"n": 68, "ph": 0, "pa": 0, "pts": null}, {"n": 69, "ph": 1, "pa": 3, "pts": null}, {"n": 70, "ph": 1, "pa": 1, "pts": null}, {"n": 71, "ph": 2, "pa": 0, "pts": null}, {"n": 72, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Xavier", "matchPts": 27, "exact": 3, "correct": 4, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}, {"name": "Autumn", "matchPts": 8, "exact": 1, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 1, "pa": 1, "pts": 0}, {"n": 3, "ph": 2, "pa": 0, "pts": 0}, {"n": 4, "ph": 1, "pa": 1, "pts": 0}]}, {"name": "River", "matchPts": 6, "exact": 0, "correct": 2, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 0, "pts": 0}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}];
-DATA.photos = Object.assign(DATA.photos||{}, {"Nonno":"nonno-bobblehead.jpg",
+DATA.photos = Object.assign(DATA.photos||{}, {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg","Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg","Boompa":"boompa-bobblehead.jpg","Autumn":"autumn-bobblehead.jpg","River":"river-bobblehead.jpg","Xavier":"xavier-bobblehead.jpg","Ewan":"ewan-bobblehead.jpg"});
+var RESULTS = {1:[2,0],2:[2,1],3:[1,1],4:[4,1]};
+DATA.matches.forEach(function(m){ if(RESULTS[m.n]){ m.ah=RESULTS[m.n][0]; m.aa=RESULTS[m.n][1]; } });
+// Run a batch of re-renders without moving the page — auto-refreshes should
+// leave the viewer exactly where they were scrolled.
+function preserveScroll(fn){
+  const y = window.scrollY || window.pageYOffset || 0;
+  fn();
+  window.scrollTo(0, y);
+  requestAnimationFrame(function(){ window.scrollTo(0, y); });
+}
+function reRenderAll(){ preserveScroll(function(){ renderLB(); renderBadges(); renderPlayers(); renderFanCam(); renderToday(); renderGroups(); renderPickoff(); renderChips(); renderMatches(); renderBracket(); tickCountdown(); }); }
+reRenderAll();
+/* Live data source: if data.json is present (when served over http), use it as the
+   source of truth and re-render. Falls back silently to the baked-in data above
+   (e.g. when opened directly as a file). This is the channel the daily updater writes. */
+function applyData(d){
+  if(!d) return;
+  if(d.standings) DATA.standings=d.standings;
+  if(d.photos) DATA.photos=Object.assign(DATA.photos||{}, d.photos);
+  if(d.probs) DATA.probs=d.probs;
+  if(d.generated) DATA.generated=d.generated;
+  if(d.prevRanks) DATA.prevRanks=d.prevRanks;
+  if(d.ranksToday) DATA.ranksToday=d.ranksToday;
+  if(d.results){ DATA.matches.forEach(function(m){ var r=d.results[m.n]||d.results[String(m.n)]; if(r){ m.ah=r[0]; m.aa=r[1]; } }); }
+  reRenderAll();
+}
+function loadData(){ fetch('data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(applyData).catch(function(){}); }
+loadData();
+// Re-pull the published data every 60s so newly submitted picks and freshly
+// entered results show up without anyone needing to reload the page.
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
