@@ -72,8 +72,8 @@ def main():
     # Champion & Podium ("final four") picks share the same sheet, flagged by a
     # text code in the match column (CHAMP/RUN/THIRD/FOURTH) with the team in predH.
     PODIUM_CODES = {"CHAMP": "champ", "RUN": "run", "THIRD": "third", "FOURTH": "fourth"}
-    # All four lock at noon CDT on Sun, Jun 28 2026 (= 1:00 PM EDT = 17:00 UTC).
-    PODIUM_LOCK = datetime.datetime(2026, 6, 28, 17, 0, tzinfo=datetime.timezone.utc)
+    # All four lock at first Quarterfinal kickoff: Thu Jul 9 4:00 PM ET = 20:00 UTC.
+    PODIUM_LOCK = datetime.datetime(2026, 7, 9, 20, 0, tzinfo=datetime.timezone.utc)
 
     # Golden Boot picks: GB1 = top scorer pick, GB2 = second, GB3 = third.
     # Lock at first Quarterfinal kickoff: Thu Jul 9 4:00 PM ET = 20:00 UTC.
