@@ -342,6 +342,37 @@ function submitPodium(){
 }
 
 // ===== Golden Boot tab =====
+// Players with 2+ goals as of Jun 26 2026 — update goal counts as the tournament progresses
+const GB_PLAYERS = [
+  {name:"Lionel Messi",          country:"ARG", goals:5},
+  {name:"Erling Haaland",        country:"NOR", goals:4},
+  {name:"Kylian Mbappé",         country:"FRA", goals:4},
+  {name:"Vinicius Jr",           country:"BRA", goals:4},
+  {name:"Brian Brobbey",         country:"NED", goals:3},
+  {name:"Deniz Undav",           country:"GER", goals:3},
+  {name:"Ismael Saibari",        country:"MAR", goals:3},
+  {name:"Johan Manzambi",        country:"SUI", goals:3},
+  {name:"Jonathan David",        country:"CAN", goals:3},
+  {name:"Matheus Cunha",         country:"BRA", goals:3},
+  {name:"Ousmane Dembélé",       country:"FRA", goals:3},
+  {name:"Ayase Ueda",            country:"JPN", goals:2},
+  {name:"Cody Gakpo",            country:"NED", goals:2},
+  {name:"Cristiano Ronaldo",     country:"POR", goals:2},
+  {name:"Crysencio Summerville", country:"NED", goals:2},
+  {name:"Cyle Larin",            country:"CAN", goals:2},
+  {name:"Daichi Kamada",         country:"JPN", goals:2},
+  {name:"Daniel Muñoz",          country:"COL", goals:2},
+  {name:"Elijah Just",           country:"NZL", goals:2},
+  {name:"Folarin Balogun",       country:"USA", goals:2},
+  {name:"Harry Kane",            country:"ENG", goals:2},
+  {name:"Ismaila Sarr",          country:"SEN", goals:2},
+  {name:"Julian Quiñones",       country:"MEX", goals:2},
+  {name:"Kai Havertz",           country:"GER", goals:2},
+  {name:"Maxi Araujo",           country:"URU", goals:2},
+  {name:"Mikel Oyarzabal",       country:"ESP", goals:2},
+  {name:"Nicolas Pepe",          country:"CIV", goals:2},
+  {name:"Yasin Ayari",           country:"SWE", goals:2},
+];
 if(!state.goldenBoot) state.goldenBoot = {pick1:"", pick2:"", pick3:""};
 const GB_LOCK = new Date("2026-07-09T20:00:00Z"); // first QF kickoff: Thu Jul 9 4:00 PM ET
 const GB_LOCK_LABEL = "Thu, Jul 9 · 4:00 PM ET (Quarterfinal kickoff)";
@@ -361,16 +392,20 @@ function renderGoldenBoot(){
     + 'Locks at <b>' + GB_LOCK_LABEL + '</b>.' + lockNote + '</div>';
   [['pick1','🥇 Pick 1 — Golden Boot winner'],['pick2','🥈 Pick 2 — 2nd top scorer'],['pick3','🥉 Pick 3 — 3rd top scorer']].forEach(function(pair){
     const key=pair[0], label=pair[1];
+    let opts = '<option value="">— choose a player —</option>';
+    GB_PLAYERS.forEach(function(p){
+      opts += '<option value="'+p.name+'"'+(p.name===gb[key]?' selected':'')+'>'+p.name+' ('+p.country+') — '+p.goals+'⚽</option>';
+    });
     html += '<div class="pcard' + (locked?' lockedrow':'') + '">'
       + '<div class="pl">' + label + '</div>'
-      + '<input type="text" data-gbkey="' + key + '" value="' + (gb[key]||'') + '" placeholder="Player name"'
-      + (locked?' disabled':'') + ' style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-weight:700;margin-top:6px;box-sizing:border-box">'
+      + '<select data-gbkey="' + key + '"' + (locked?' disabled':'') + ' style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-weight:700;margin-top:6px;box-sizing:border-box;background:#fff">'
+      + opts + '</select>'
       + '</div>';
   });
   if(!locked) html += '<button class="btn" id="gbSubmit" style="width:100%;margin-top:8px">Submit Golden Boot picks ✅</button>';
   panelGoldenBoot.innerHTML = html;
-  panelGoldenBoot.querySelectorAll("input[data-gbkey]").forEach(function(inp){
-    inp.oninput = function(){ state.goldenBoot[inp.dataset.gbkey] = inp.value.trim(); save(); };
+  panelGoldenBoot.querySelectorAll("select[data-gbkey]").forEach(function(sel){
+    sel.onchange = function(){ state.goldenBoot[sel.dataset.gbkey] = sel.value; save(); };
   });
   const gs = document.getElementById("gbSubmit");
   if(gs) gs.onclick = submitGoldenBoot;
