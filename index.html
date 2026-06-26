@@ -393,7 +393,16 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
       <div class="helptip">⭐ You don't have to pick every game — pick as many or as few as you like.</div>
 
       <div class="hq">🏆 The Leaderboard</div>
-      <p>Scoring: <b>3 points</b> for the right result (win, lose or draw), and <b>8 points</b> for nailing the exact score. Most points wins!</p>
+      <p>Scoring: <b>correct result</b> (win, lose or draw) scores points that grow each round — <b>3 pts</b> in the group stage, rising to <b>25 pts</b> in the Final. Nail the <b>exact score</b> for a much bigger bonus: <b>8 pts</b> in the group stage up to <b>50 pts</b> for the Final. Most points wins!</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0 4px">
+        <tr style="color:var(--gold);font-weight:700;text-align:left"><th style="padding:3px 6px">Round</th><th style="padding:3px 6px">Correct result</th><th style="padding:3px 6px">Exact score</th></tr>
+        <tr><td style="padding:3px 6px">Group Stage</td><td style="padding:3px 6px">3 pts</td><td style="padding:3px 6px">8 pts</td></tr>
+        <tr><td style="padding:3px 6px">Round of 32</td><td style="padding:3px 6px">5 pts</td><td style="padding:3px 6px">12 pts</td></tr>
+        <tr><td style="padding:3px 6px">Round of 16</td><td style="padding:3px 6px">8 pts</td><td style="padding:3px 6px">18 pts</td></tr>
+        <tr><td style="padding:3px 6px">Quarterfinal</td><td style="padding:3px 6px">12 pts</td><td style="padding:3px 6px">25 pts</td></tr>
+        <tr><td style="padding:3px 6px">Semifinal</td><td style="padding:3px 6px">18 pts</td><td style="padding:3px 6px">35 pts</td></tr>
+        <tr style="font-weight:800;color:var(--gold)"><td style="padding:3px 6px">⭐ Final</td><td style="padding:3px 6px">25 pts</td><td style="padding:3px 6px">50 pts</td></tr>
+      </table>
 
       <div class="hq">🥇 Champion &amp; Podium picks <span style="color:var(--gold2)">⭐ new!</span></div>
       <p>In <b>Make Your Picks</b>, open the <b>🏆 Champion &amp; Podium</b> tab and call the top four of the whole tournament. Big bonus points for an <b>exact finish</b>: <b>50</b> for the Champion, <b>35</b> for the Runner-up, <b>20</b> for 3rd place, and <b>10</b> for 4th — up to <b>115</b> in all. You only score for a team in the <b>exact</b> spot, so place them carefully!</p>
@@ -513,8 +522,8 @@ function syncStandingsFromResults(){
     let mp=0,ex=0,co=0;
     (p.picks||[]).forEach(function(pk){
       if(R[pk.n] && pk.ph!=null && pk.pa!=null){
-        const pts=provPts(pk.ph,pk.pa,R[pk.n][0],R[pk.n][1]);
-        pk.pts=pts; mp+=pts; if(pts===8) ex++; if(pts>=3) co++;
+        const pts=provPts(pk.ph,pk.pa,R[pk.n][0],R[pk.n][1],pk.n);
+        pk.pts=pts; mp+=pts; if(isExactPick(pk.ph,pk.pa,R[pk.n][0],R[pk.n][1])) ex++; if(pts>0) co++;
       } else { pk.pts=null; }
     });
     p.matchPts=mp; p.exact=ex; p.correct=co;
@@ -812,8 +821,23 @@ function fetchLive(){
       LIVE=next; preserveScroll(function(){ renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers(); renderGroups(); });
     }).catch(()=>{});
 }
-function provPts(ph,pa,ah,aa){ if(ph==null||pa==null||ah==null||aa==null) return 0;
-  if(ph===ah&&pa===aa) return 8; const s=(x,y)=>(x>y)-(x<y); return s(ph,pa)===s(ah,aa)?3:0; }
+function matchStage(n){
+  if(n<=72)  return 'Group Stage';
+  if(n<=88)  return 'Round of 32';
+  if(n<=96)  return 'Round of 16';
+  if(n<=100) return 'Quarterfinal';
+  if(n<=102) return 'Semifinal';
+  if(n===103) return 'Third Place';
+  return 'Final';
+}
+function stagePtsFor(n){
+  const sp=(DATA.stagePts||{})[matchStage(n)];
+  return sp || {correct:3, exact:8};
+}
+function isExactPick(ph,pa,ah,aa){ return ph!=null&&pa!=null&&ah!=null&&aa!=null&&ph===ah&&pa===aa; }
+function provPts(ph,pa,ah,aa,n){ if(ph==null||pa==null||ah==null||aa==null) return 0;
+  const {correct,exact}=stagePtsFor(n||1);
+  if(ph===ah&&pa===aa) return exact; const s=(x,y)=>(x>y)-(x<y); return s(ph,pa)===s(ah,aa)?correct:0; }
 
 function pocardHtml(m){
   const done=m.ah!=null;
@@ -827,17 +851,18 @@ function pocardHtml(m){
   else { scoreHtml='vs'; statHtml='<span class="postat live">🔴 IN PLAY</span>'; scored=false; }
   const liveScored = hasLive && lv.state!=='post';
   let picks=DATA.standings.map(function(p){const pk=p.picks.find(function(k){return k.n===m.n;}); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts}:null;}).filter(Boolean);
-  const ptOf = function(p){ return done ? (p.pts||0) : (scored ? provPts(p.ph,p.pa,sh,sa) : -1); };
+  const sp=stagePtsFor(m.n);
+  const ptOf = function(p){ return done ? (p.pts||0) : (scored ? provPts(p.ph,p.pa,sh,sa,m.n) : -1); };
   if(scored) picks.sort(function(a,b){ return (ptOf(b)-ptOf(a))||a.name.localeCompare(b.name); });
   else picks.sort(function(a,b){ return a.name.localeCompare(b.name); });
   const rows = picks.length ? picks.map(function(p){
     let badge='·', win='';
-    if(scored){ const pp=ptOf(p); badge=(pp===8?'🔥 8':(pp===3?'✅ 3':'0'))+(done?'':'*'); win=pp>0?'win':''; }
+    if(scored){ const pp=ptOf(p); badge=(pp===sp.exact?'🔥 '+sp.exact:(pp===sp.correct?'✅ '+sp.correct:'0'))+(done?'':'*'); win=pp>0?'win':''; }
     return '<div class="porow '+win+'"><div class="pn">'+pavatar(p.name,24)+p.name+'</div>'+
       '<div class="pp">'+p.ph+'–'+p.pa+'</div><div class="pb">'+badge+'</div></div>';
   }).join('') : '<div class="porow"><div class="pn" style="color:var(--muted);font-weight:600">No one predicted this one 🤷</div><div></div><div></div></div>';
   let foot='';
-  if(done){ const ex=picks.filter(function(p){return p.pts===8;}).map(function(p){return p.name;}); if(ex.length) foot='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
+  if(done){ const ex=picks.filter(function(p){return isExactPick(p.ph,p.pa,m.ah,m.aa);}).map(function(p){return p.name;}); if(ex.length) foot='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
   else if(liveScored){ foot='<div class="poexact">🔴 Live points — they update as the score changes and lock at full time. (* = provisional)</div>'; }
   return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+scoreHtml+'</span>'+m.a+' '+flag(m.a)+'</div>'+statHtml+'</div>'+rows+foot+'</div>';
 }
@@ -884,7 +909,7 @@ function openPlayer(name){
   const rows = x.picks.length? x.picks.map(pk=>{
     const m=mByN(pk.n);
     const res = m && m.ah!=null ? m.ah+'–'+m.aa : 'TBD';
-    const pz = pk.pts==null? '—' : (pk.pts===8?'🔥 8':(pk.pts===3?'✅ 3':'0'));
+    const _sp=stagePtsFor(pk.n); const pz = pk.pts==null? '—' : (pk.pts===_sp.exact?'🔥 '+_sp.exact:(pk.pts===_sp.correct?'✅ '+_sp.correct:'0'));
     return '<div class="prow"><span class="pp">'+flag(m.h)+' '+m.h+' '+pk.ph+'–'+pk.pa+' '+m.a+' '+flag(m.a)+'</span><span class="pz">'+pz+'</span></div>'+
       '<div class="prow" style="border:none;padding-top:0;margin-top:-6px"><span class="sm" style="font-size:11px;color:var(--muted)">Match '+pk.n+' · actual: '+res+'</span><span></span></div>';
   }).join('') : '<p class="sm">No match predictions entered yet.</p>';
@@ -1475,38 +1500,4 @@ DATA.standings = [{"name": "Ewan", "matchPts": 11, "exact": 1, "correct": 2, "ch
 DATA.generated = "2026-06-12";
 /* ---- refreshed 6/12 results + standings (overrides the line above) ---- */
 DATA.standings = [{"name": "Ewan", "matchPts": 14, "exact": 1, "correct": 3, "champ": "Spain", "photo": null, "picks": [{"n": 1, "ph": 3, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 2, "pa": 1, "pts": 0}, {"n": 4, "ph": 2, "pa": 0, "pts": 3}, {"n": 5, "ph": 0, "pa": 2, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 2, "pts": null}, {"n": 8, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Nana", "matchPts": 14, "exact": 1, "correct": 3, "champ": "France", "photo": "nana-bobblehead.jpg", "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 2, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 2, "pa": 0, "pts": 3}]}, {"name": "Emrys", "matchPts": 9, "exact": 0, "correct": 3, "champ": null, "photo": "emrys-bobblehead.jpg", "picks": [{"n": 1, "ph": 1, "pa": 0, "pts": 3}, {"n": 2, "ph": 3, "pa": 1, "pts": 3}, {"n": 3, "ph": 2, "pa": 2, "pts": 3}, {"n": 4, "ph": 1, "pa": 2, "pts": 0}]}, {"name": "Nonno", "matchPts": 14, "exact": 1, "correct": 3, "champ": "Brazil", "photo": "nonno-bobblehead.jpg", "picks": [{"n": 1, "ph": 3, "pa": 0, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 3, "pa": 1, "pts": 3}, {"n": 5, "ph": 0, "pa": 4, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 4, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 7, "pa": 0, "pts": null}, {"n": 10, "ph": 2, "pa": 1, "pts": null}]}, {"name": "Nonna", "matchPts": 11, "exact": 1, "correct": 2, "champ": null, "photo": "nonna-bobblehead.jpg", "picks": [{"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 0, "pts": 0}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}, {"name": "Boompa", "matchPts": 0, "exact": 0, "correct": 0, "champ": "France", "photo": null, "picks": [{"n": 1, "ph": 0, "pa": 1, "pts": 0}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 3, "pa": 0, "pts": 0}, {"n": 4, "ph": 1, "pa": 1, "pts": 0}, {"n": 5, "ph": 0, "pa": 1, "pts": null}, {"n": 6, "ph": 3, "pa": 1, "pts": null}, {"n": 7, "ph": 0, "pa": 1, "pts": null}, {"n": 8, "ph": 1, "pa": 3, "pts": null}, {"n": 9, "ph": 3, "pa": 0, "pts": null}, {"n": 10, "ph": 1, "pa": 1, "pts": null}, {"n": 11, "ph": 1, "pa": 2, "pts": null}, {"n": 12, "ph": 0, "pa": 1, "pts": null}, {"n": 13, "ph": 3, "pa": 0, "pts": null}, {"n": 14, "ph": 3, "pa": 2, "pts": null}, {"n": 15, "ph": 1, "pa": 1, "pts": null}, {"n": 16, "ph": 0, "pa": 0, "pts": null}, {"n": 17, "ph": 3, "pa": 0, "pts": null}, {"n": 18, "ph": 0, "pa": 3, "pts": null}, {"n": 19, "ph": 2, "pa": 0, "pts": null}, {"n": 20, "ph": 1, "pa": 0, "pts": null}, {"n": 21, "ph": 2, "pa": 0, "pts": null}, {"n": 22, "ph": 3, "pa": 1, "pts": null}, {"n": 23, "ph": 1, "pa": 1, "pts": null}, {"n": 24, "ph": 0, "pa": 2, "pts": null}, {"n": 25, "ph": 0, "pa": 0, "pts": null}, {"n": 26, "ph": 1, "pa": 1, "pts": null}, {"n": 27, "ph": 2, "pa": 1, "pts": null}, {"n": 28, "ph": 2, "pa": 2, "pts": null}, {"n": 29, "ph": 1, "pa": 1, "pts": null}, {"n": 30, "ph": 2, "pa": 0, "pts": null}, {"n": 31, "ph": 2, "pa": 0, "pts": null}, {"n": 32, "ph": 3, "pa": 1, "pts": null}, {"n": 33, "ph": 1, "pa": 1, "pts": null}, {"n": 34, "ph": 2, "pa": 0, "pts": null}, {"n": 35, "ph": 1, "pa": 1, "pts": null}, {"n": 36, "ph": 1, "pa": 2, "pts": null}, {"n": 37, "ph": 3, "pa": 1, "pts": null}, {"n": 38, "ph": 2, "pa": 0, "pts": null}, {"n": 39, "ph": 1, "pa": 1, "pts": null}, {"n": 40, "ph": 1, "pa": 2, "pts": null}, {"n": 41, "ph": 2, "pa": 1, "pts": null}, {"n": 42, "ph": 3, "pa": 0, "pts": null}, {"n": 43, "ph": 1, "pa": 0, "pts": null}, {"n": 44, "ph": 1, "pa": 1, "pts": null}, {"n": 45, "ph": 2, "pa": 0, "pts": null}, {"n": 46, "ph": 2, "pa": 0, "pts": null}, {"n": 47, "ph": 1, "pa": 1, "pts": null}, {"n": 48, "ph": 1, "pa": 0, "pts": null}, {"n": 49, "ph": 1, "pa": 2, "pts": null}, {"n": 50, "ph": 1, "pa": 1, "pts": null}, {"n": 51, "ph": 2, "pa": 3, "pts": null}, {"n": 52, "ph": 1, "pa": 1, "pts": null}, {"n": 53, "ph": 3, "pa": 1, "pts": null}, {"n": 54, "ph": 2, "pa": 0, "pts": null}, {"n": 55, "ph": 1, "pa": 3, "pts": null}, {"n": 56, "ph": 1, "pa": 1, "pts": null}, {"n": 57, "ph": 0, "pa": 2, "pts": null}, {"n": 58, "ph": 2, "pa": 2, "pts": null}, {"n": 59, "ph": 0, "pa": 3, "pts": null}, {"n": 60, "ph": 0, "pa": 2, "pts": null}, {"n": 61, "ph": 1, "pa": 2, "pts": null}, {"n": 62, "ph": 0, "pa": 2, "pts": null}, {"n": 63, "ph": 0, "pa": 2, "pts": null}, {"n": 64, "ph": 0, "pa": 1, "pts": null}, {"n": 65, "ph": 0, "pa": 2, "pts": null}, {"n": 66, "ph": 3, "pa": 0, "pts": null}, {"n": 67, "ph": 0, "pa": 2, "pts": null}, {"n": 68, "ph": 0, "pa": 0, "pts": null}, {"n": 69, "ph": 1, "pa": 3, "pts": null}, {"n": 70, "ph": 1, "pa": 1, "pts": null}, {"n": 71, "ph": 2, "pa": 0, "pts": null}, {"n": 72, "ph": 0, "pa": 1, "pts": null}]}, {"name": "Xavier", "matchPts": 27, "exact": 3, "correct": 4, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 2, "pa": 1, "pts": 8}, {"n": 3, "ph": 1, "pa": 1, "pts": 8}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}, {"name": "Autumn", "matchPts": 8, "exact": 1, "correct": 1, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 0, "pts": 8}, {"n": 2, "ph": 1, "pa": 1, "pts": 0}, {"n": 3, "ph": 2, "pa": 0, "pts": 0}, {"n": 4, "ph": 1, "pa": 1, "pts": 0}]}, {"name": "River", "matchPts": 6, "exact": 0, "correct": 2, "champ": null, "photo": null, "picks": [{"n": 1, "ph": 2, "pa": 1, "pts": 3}, {"n": 2, "ph": 1, "pa": 2, "pts": 0}, {"n": 3, "ph": 1, "pa": 0, "pts": 0}, {"n": 4, "ph": 2, "pa": 1, "pts": 3}]}];
-DATA.photos = Object.assign(DATA.photos||{}, {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg","Nana":"nana-bobblehead.jpg","Nonna":"nonna-bobblehead.jpg","Boompa":"boompa-bobblehead.jpg","Autumn":"autumn-bobblehead.jpg","River":"river-bobblehead.jpg","Xavier":"xavier-bobblehead.jpg","Ewan":"ewan-bobblehead.jpg"});
-var RESULTS = {1:[2,0],2:[2,1],3:[1,1],4:[4,1]};
-DATA.matches.forEach(function(m){ if(RESULTS[m.n]){ m.ah=RESULTS[m.n][0]; m.aa=RESULTS[m.n][1]; } });
-// Run a batch of re-renders without moving the page — auto-refreshes should
-// leave the viewer exactly where they were scrolled.
-function preserveScroll(fn){
-  const y = window.scrollY || window.pageYOffset || 0;
-  fn();
-  window.scrollTo(0, y);
-  requestAnimationFrame(function(){ window.scrollTo(0, y); });
-}
-function reRenderAll(){ preserveScroll(function(){ renderLB(); renderBadges(); renderPlayers(); renderFanCam(); renderToday(); renderGroups(); renderPickoff(); renderChips(); renderMatches(); renderBracket(); tickCountdown(); }); }
-reRenderAll();
-/* Live data source: if data.json is present (when served over http), use it as the
-   source of truth and re-render. Falls back silently to the baked-in data above
-   (e.g. when opened directly as a file). This is the channel the daily updater writes. */
-function applyData(d){
-  if(!d) return;
-  if(d.standings) DATA.standings=d.standings;
-  if(d.photos) DATA.photos=Object.assign(DATA.photos||{}, d.photos);
-  if(d.probs) DATA.probs=d.probs;
-  if(d.generated) DATA.generated=d.generated;
-  if(d.prevRanks) DATA.prevRanks=d.prevRanks;
-  if(d.ranksToday) DATA.ranksToday=d.ranksToday;
-  if(d.results){ DATA.matches.forEach(function(m){ var r=d.results[m.n]||d.results[String(m.n)]; if(r){ m.ah=r[0]; m.aa=r[1]; } }); }
-  reRenderAll();
-}
-function loadData(){ fetch('data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(applyData).catch(function(){}); }
-loadData();
-// Re-pull the published data every 60s so newly submitted picks and freshly
-// entered results show up without anyone needing to reload the page.
-setInterval(loadData, 60000);
-</script>
-</body>
-</html>
+DATA.photos = Object.assign(DATA.photos||{}, {"Nonno":"nonno-bobblehead.jpg",

@@ -22,6 +22,27 @@ PHOTOS = {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg",
           "River":"river-bobblehead.jpg","Xavier":"xavier-bobblehead.jpg",
           "Ewan":"ewan-bobblehead.jpg"}
 
+# Escalating knockout point values: (correct result pts, exact score pts)
+STAGE_PTS = {
+    "Group Stage":  (3,  8),
+    "Round of 32":  (5,  12),
+    "Round of 16":  (8,  18),
+    "Quarterfinal": (12, 25),
+    "Semifinal":    (18, 35),
+    "Third Place":  (12, 25),
+    "Final":        (25, 50),
+}
+
+def match_stage(n):
+    """Return the stage name for match number n (1-104)."""
+    if n <= 72:  return "Group Stage"
+    if n <= 88:  return "Round of 32"
+    if n <= 96:  return "Round of 16"
+    if n <= 100: return "Quarterfinal"
+    if n <= 102: return "Semifinal"
+    if n == 103: return "Third Place"
+    return "Final"
+
 def compute_ranks(standings):
     """Rank purely by points (ties share a rank), matching the front-end logic."""
     s = sorted(standings, key=lambda x: (-x["matchPts"], -x["exact"], -x["correct"], x["name"]))
@@ -32,11 +53,13 @@ def compute_ranks(standings):
         ranks[x["name"]] = rank
     return ranks
 
-def pts(ph, pa, ah, aa):
-    if None in (ph, pa, ah, aa): return None
-    if ph == ah and pa == aa: return 8
+def pts(ph, pa, ah, aa, n=1):
+    """Return (points, is_exact). Points is None if result not yet known."""
+    if None in (ph, pa, ah, aa): return None, False
+    correct_pts, exact_pts = STAGE_PTS[match_stage(n)]
+    if ph == ah and pa == aa: return exact_pts, True
     sign = lambda x, y: (x > y) - (x < y)
-    return 3 if sign(ph, pa) == sign(ah, aa) else 0
+    return (correct_pts if sign(ph, pa) == sign(ah, aa) else 0), False
 
 def main():
     wb = openpyxl.load_workbook(XLSX)
@@ -70,6 +93,7 @@ def main():
             results[n] = rstore[n]
         elif g is not None and h is not None:
             results[n] = [g, h]
+
     # "generated" = date of the first match with no result yet (the next slate to pick)
     generated = None
     for r in range(4, 108):
@@ -77,6 +101,7 @@ def main():
             d = ws["B"+str(r)].value
             generated = d.strftime("%Y-%m-%d") if d else None
             break
+
     mres = {n: (results[n][0], results[n][1]) if n in results else (None, None)
             for n in range(1, 105)}
 
@@ -85,29 +110,29 @@ def main():
         picks, mp, ex, cor = [], 0, 0, 0
         pj = pjson.get(name, {})
         for r in range(4, 108):
-            n = r-3
+            n = r - 3
             ov = pj.get(str(n))
             if ov:
                 ph, pa = ov[0], ov[1]
             else:
                 ph, pa = ws[hc+str(r)].value, ws[ac+str(r)].value
             if ph is None and pa is None: continue
-            ah, aa = mres[n]; p = pts(ph, pa, ah, aa)
+            ah, aa = mres[n]
+            p, is_exact = pts(ph, pa, ah, aa, n)
             picks.append({"n": n, "ph": ph, "pa": pa, "pts": p})
             if p is not None:
                 mp += p
-                if p == 8: ex += 1
+                if is_exact: ex += 1
                 if p > 0: cor += 1
-        # Champion & Podium ("final four") picks, auto-synced from the Google Sheet
-        # via fetch_picks.py. A live champion pick overrides the hardcoded default.
+
+        # Champion & Podium picks, auto-synced from Google Sheet via fetch_picks.py.
         podium = pj.get("podium") or {}
         champ = podium.get("champ") or CHAMPS.get(name)
         standings.append({"name": name, "matchPts": mp, "exact": ex, "correct": cor,
                           "champ": champ, "podium": podium,
                           "photo": PHOTOS.get(name), "picks": picks})
 
-    # Load the existing data.json once: keep probabilities, and use its rank
-    # snapshots to work out day-over-day leaderboard movement.
+    # Load existing data.json: keep probabilities and rank snapshots.
     old = {}
     if os.path.exists(OUT):
         try:
@@ -117,9 +142,8 @@ def main():
             old = {}
     probs = old.get("probs", {}) or {}
 
-    # Day-over-day movement: prevRanks is the baseline (the ranks as of the last
-    # day we ran). On the first run of a new day, yesterday's final ranks become
-    # the new baseline; multiple runs the same day keep the same baseline.
+    # Day-over-day movement: prevRanks is yesterday's final ranks; ranksToday
+    # is the current run. Multiple runs the same day keep the same baseline.
     today_str = datetime.date.today().isoformat()
     cur_ranks = compute_ranks(standings)
     prev_ranks = old.get("prevRanks")
@@ -127,10 +151,16 @@ def main():
     if old_today and old_today.get("date") != today_str:
         prev_ranks = old_today
 
-    data = {"generated": generated, "standings": standings,
-            "results": results, "photos": PHOTOS, "probs": probs,
-            "prevRanks": prev_ranks,
-            "ranksToday": {"date": today_str, "ranks": cur_ranks}}
+    data = {
+        "generated": generated,
+        "standings": standings,
+        "results": results,
+        "photos": PHOTOS,
+        "probs": probs,
+        "prevRanks": prev_ranks,
+        "ranksToday": {"date": today_str, "ranks": cur_ranks},
+        "stagePts": {k: {"correct": v[0], "exact": v[1]} for k, v in STAGE_PTS.items()},
+    }
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
     print(f"Wrote {OUT}: {len(standings)} players, {len(results)} results, "
