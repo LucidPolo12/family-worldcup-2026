@@ -158,7 +158,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .acard .pchip{font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;background:#f4f8f5;border:1px solid var(--line);color:var(--g2)}
 .acard .pchip.pout{background:#fbf0f0;border-color:#f0d7d7;color:#b5685f;text-decoration:line-through}
 /* ---- Knockout: bracket tree ---- */
-.bkt{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 14px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.bkt{display:flex;gap:30px;overflow-x:auto;padding:4px 2px 14px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .bcol{flex:0 0 auto;width:250px;scroll-snap-align:start}
 .bcol .rh{font-weight:900;color:#b06a00;font-size:13px;display:flex;justify-content:space-between;align-items:baseline;padding:7px 11px;background:linear-gradient(180deg,#fff8ec,#fff);border:1px solid #f0e2c8;border-radius:10px;margin-bottom:9px}
 .bcol .rh .ct{font-weight:700;color:#9a8;font-size:11px}
@@ -1435,31 +1435,87 @@ function shareDailyCard(){
   }catch(e){ alert('Could not create the image on this device.'); }
 }
 
-/* ── Bracket SVG connector lines ─────────────────────────────────── */
-function drawBracketConnectors(){
+/* ── Bracket layout + SVG connector lines ─────────────────────── */
+function layoutAndConnectBracket(){
   const bkt=document.querySelector('.bkt');
   if(!bkt) return;
-  const old=bkt.querySelector('.bkt-svg');
-  if(old) old.remove();
+  const oldSvg=bkt.querySelector('.bkt-svg');
+  if(oldSvg) oldSvg.remove();
 
-  // Position of an element relative to the .bkt scrollable area
-  function relPos(el){
-    let top=0,left=0,e=el;
-    while(e&&e!==bkt){top+=e.offsetTop;left+=e.offsetLeft;e=e.offsetParent;}
-    return {top,left,w:el.offsetWidth,h:el.offsetHeight};
-  }
+  bkt.style.position='relative';
 
   const koM=DATA.matches.filter(isKnk);
   const byStage={};
   koM.forEach(function(m){(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
 
-  // Build (from1, from2) → to pairs by positional bracket ordering
+  const r32=(byStage['Round of 32']||[]).slice().sort((a,b)=>a.n-b.n);
+  if(!r32.length) return;
+
+  // Make columns position:relative so offsetParent chain is: card → .bcol → .bkt
+  bkt.querySelectorAll('.bcol').forEach(function(col){col.style.position='relative';});
+
+  const r32Col=document.getElementById('bm-'+r32[0].n).closest('.bcol');
+  const colH=r32Col.offsetHeight; // natural height of R32 column — all columns adopt this
+
+  // Pre-measure all card heights before any repositioning
+  const cardH={};
+  koM.forEach(function(m){
+    const el=document.getElementById('bm-'+m.n);
+    if(el) cardH[m.n]=el.offsetHeight;
+  });
+
+  // Fix all column heights so absolutely-positioned cards don't collapse them
+  bkt.querySelectorAll('.bcol').forEach(function(col){col.style.height=colH+'px';});
+
+  // Measure R32 card vertical centers relative to .bkt
+  const centerY={};
+  r32.forEach(function(m){
+    const el=document.getElementById('bm-'+m.n);
+    if(el) centerY[m.n]=r32Col.offsetTop+el.offsetTop+el.offsetHeight/2;
+  });
+
+  // For each subsequent stage, compute target center = midpoint of its two source cards,
+  // then absolutely-position the card at that Y within its column.
   const stageFlow=[
     ['Round of 32','Round of 16'],
     ['Round of 16','Quarterfinal'],
     ['Quarterfinal','Semifinal'],
     ['Semifinal','Final'],
   ];
+  stageFlow.forEach(function(s){
+    const src=(byStage[s[0]]||[]).slice().sort((a,b)=>a.n-b.n);
+    const dst=(byStage[s[1]]||[]).slice().sort((a,b)=>a.n-b.n);
+    dst.forEach(function(match,i){
+      const el=document.getElementById('bm-'+match.n);
+      if(!el) return;
+      const a=src[i*2],b=src[i*2+1];
+      if(!a||!b||centerY[a.n]==null||centerY[b.n]==null) return;
+      const cy=(centerY[a.n]+centerY[b.n])/2;
+      centerY[match.n]=cy;
+      const col=el.closest('.bcol');
+      const topPx=Math.round(cy-col.offsetTop-(cardH[match.n]||el.offsetHeight)/2);
+      el.style.position='absolute';
+      el.style.left='0'; el.style.right='0'; el.style.width='auto';
+      el.style.marginBottom='0'; el.style.top=topPx+'px';
+    });
+  });
+
+  // Third Place: same vertical center as Final (midpoint of the two SF matches)
+  const sf=(byStage['Semifinal']||[]).slice().sort((a,b)=>a.n-b.n);
+  const tp=(byStage['Third Place']||[]);
+  if(sf.length===2&&tp.length===1){
+    const el=document.getElementById('bm-'+tp[0].n);
+    if(el&&centerY[sf[0].n]!=null&&centerY[sf[1].n]!=null){
+      const cy=(centerY[sf[0].n]+centerY[sf[1].n])/2;
+      centerY[tp[0].n]=cy;
+      const col=el.closest('.bcol');
+      const topPx=Math.round(cy-col.offsetTop-(cardH[tp[0].n]||el.offsetHeight)/2);
+      el.style.position='absolute'; el.style.left='0'; el.style.right='0';
+      el.style.width='auto'; el.style.marginBottom='0'; el.style.top=topPx+'px';
+    }
+  }
+
+  // ── SVG connector lines ───────────────────────────────────────
   const pairs=[];
   stageFlow.forEach(function(s){
     const src=(byStage[s[0]]||[]).slice().sort((a,b)=>a.n-b.n);
@@ -1468,30 +1524,23 @@ function drawBracketConnectors(){
       if(src[i*2]&&src[i*2+1]) pairs.push({a:src[i*2].n,b:src[i*2+1].n,c:dst[i].n});
     }
   });
-  // SF losers → Third Place
-  const sf=(byStage['Semifinal']||[]).slice().sort((a,b)=>a.n-b.n);
-  const tp=(byStage['Third Place']||[]);
   if(sf.length===2&&tp.length===1) pairs.push({a:sf[0].n,b:sf[1].n,c:tp[0].n,dashed:true});
-
-  // Ensure .bkt is the offsetParent for its children before measuring
-  bkt.style.position='relative';
 
   const svgNS='http://www.w3.org/2000/svg';
   const svg=document.createElementNS(svgNS,'svg');
   svg.classList.add('bkt-svg');
-  svg.setAttribute('width',bkt.scrollWidth);
-  svg.setAttribute('height',bkt.scrollHeight);
+  svg.setAttribute('width',bkt.scrollWidth); svg.setAttribute('height',bkt.scrollHeight);
   svg.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:0;overflow:visible';
 
   pairs.forEach(function(pair){
     const ea=document.getElementById('bm-'+pair.a);
     const eb=document.getElementById('bm-'+pair.b);
     const ec=document.getElementById('bm-'+pair.c);
-    if(!ea||!eb||!ec) return;
-    const ra=relPos(ea),rb=relPos(eb),rc=relPos(ec);
-    const x1=ra.left+ra.w, y1=ra.top+ra.h/2;
-    const x2=rb.left+rb.w, y2=rb.top+rb.h/2;
-    const xd=rc.left,      yd=rc.top+rc.h/2;
+    if(!ea||!eb||!ec||centerY[pair.a]==null||centerY[pair.b]==null||centerY[pair.c]==null) return;
+    const col_a=ea.closest('.bcol'), col_c=ec.closest('.bcol');
+    const x1=col_a.offsetLeft+ea.offsetLeft+ea.offsetWidth, y1=centerY[pair.a];
+    const x2=col_a.offsetLeft+eb.offsetLeft+eb.offsetWidth, y2=centerY[pair.b];
+    const xd=col_c.offsetLeft+ec.offsetLeft,                yd=centerY[pair.c];
     const xm=(Math.max(x1,x2)+xd)/2;
     const ym=(y1+y2)/2;
     const col=pair.dashed?'rgba(160,120,40,0.35)':'rgba(176,120,0,0.45)';
@@ -1512,7 +1561,7 @@ function drawBracketConnectors(){
 
   bkt.insertBefore(svg,bkt.firstChild);
 }
-window.addEventListener('resize',function(){setTimeout(drawBracketConnectors,50);});
+window.addEventListener('resize',function(){setTimeout(layoutAndConnectBracket,50);});
 
 function renderBracket(){
   renderAlive();
@@ -1583,7 +1632,7 @@ function renderBracket(){
       return '<div class="bcol"><div class="rh"><span>'+(label[st]||st)+'</span><span class="ct">'+cnt+'</span></div>'+cards+'</div>';
     }).join('')+'</div>';
   KO_PRIMED=true; // after the first paint, future changes animate
-  setTimeout(drawBracketConnectors, 0); // draw SVG lines after DOM paint
+  setTimeout(layoutAndConnectBracket, 0); // align cards + draw SVG lines after DOM paint
 }
 renderBracket();
 
