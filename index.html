@@ -162,7 +162,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .bcol{flex:0 0 auto;width:250px;scroll-snap-align:start}
 .bcol .rh{font-weight:900;color:#b06a00;font-size:13px;display:flex;justify-content:space-between;align-items:baseline;padding:7px 11px;background:linear-gradient(180deg,#fff8ec,#fff);border:1px solid #f0e2c8;border-radius:10px;margin-bottom:9px}
 .bcol .rh .ct{font-weight:700;color:#9a8;font-size:11px}
-.bm{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px;margin-bottom:9px;box-shadow:0 1px 2px rgba(0,0,0,.04);position:relative}
+.bm{background:var(--card);border:1px solid #c0cab8;border-radius:12px;padding:9px 11px;margin-bottom:9px;box-shadow:0 1px 2px rgba(0,0,0,.04);position:relative}
 .bm.live{border-color:#f3b4b4;box-shadow:0 0 0 2px rgba(220,60,60,.12)}
 .bm.fam{border-color:var(--gold2);box-shadow:0 0 0 2px rgba(244,169,0,.16)}
 .bm .tr{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;padding:3px 0}
@@ -1524,7 +1524,8 @@ function layoutAndConnectBracket(){
       if(src[i*2]&&src[i*2+1]) pairs.push({a:src[i*2].n,b:src[i*2+1].n,c:dst[i].n});
     }
   });
-  if(sf.length===2&&tp.length===1) pairs.push({a:sf[0].n,b:sf[1].n,c:tp[0].n,dashed:true});
+  // 3P is LEFT of SF — connector goes rightward from 3P side → leftward from SF left edges
+  if(sf.length===2&&tp.length===1) pairs.push({a:sf[0].n,b:sf[1].n,c:tp[0].n,dashed:true,leftward:true});
 
   const svgNS='http://www.w3.org/2000/svg';
   const svg=document.createElementNS(svgNS,'svg');
@@ -1538,12 +1539,22 @@ function layoutAndConnectBracket(){
     const ec=document.getElementById('bm-'+pair.c);
     if(!ea||!eb||!ec||centerY[pair.a]==null||centerY[pair.b]==null||centerY[pair.c]==null) return;
     const col_a=ea.closest('.bcol'), col_c=ec.closest('.bcol');
-    const x1=col_a.offsetLeft+ea.offsetLeft+ea.offsetWidth, y1=centerY[pair.a];
-    const x2=col_a.offsetLeft+eb.offsetLeft+eb.offsetWidth, y2=centerY[pair.b];
-    const xd=col_c.offsetLeft+ec.offsetLeft,                yd=centerY[pair.c];
-    const xm=(Math.max(x1,x2)+xd)/2;
+    const y1=centerY[pair.a], y2=centerY[pair.b];
     const ym=(y1+y2)/2;
-    const col=pair.dashed?'rgba(160,120,40,0.35)':'rgba(176,120,0,0.45)';
+    let x1,x2,xd,xm;
+    if(pair.leftward){
+      // SF is RIGHT of 3P: use SF left edges → meet in gap → 3P right edge
+      x1=col_a.offsetLeft;               // left edge of SF column (cards start at left:0)
+      x2=col_a.offsetLeft;               // same column for both SF matches
+      xd=col_c.offsetLeft+ec.offsetWidth; // right edge of 3P card
+      xm=(x1+xd)/2;                      // midpoint in the gap between 3P and SF
+    } else {
+      x1=col_a.offsetLeft+ea.offsetLeft+ea.offsetWidth;
+      x2=col_a.offsetLeft+eb.offsetLeft+eb.offsetWidth;
+      xd=col_c.offsetLeft+ec.offsetLeft;
+      xm=(Math.max(x1,x2)+xd)/2;
+    }
+    const col=pair.dashed?'rgba(160,120,40,0.38)':'rgba(176,120,0,0.45)';
     const sw=pair.dashed?'1.5':'2';
     const da=pair.dashed?'5,4':'';
     function seg(d){
@@ -1567,7 +1578,7 @@ function renderBracket(){
   renderAlive();
   const byStage={};
   DATA.matches.filter(isKnk).forEach(function(m){(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
-  const order=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
+  const order=['Round of 32','Round of 16','Quarterfinal','Third Place','Semifinal','Final'];
   const label={'Round of 32':'Round of 32','Round of 16':'Round of 16','Quarterfinal':'Quarterfinals','Semifinal':'Semifinals','Third Place':'Third Place','Final':'Final'};
   const stages=order.filter(s=>byStage[s]);
   const ctx=koContext(), R=ctx.R, O=ctx.O, TA=ctx.TA, fc=famChampMap();
