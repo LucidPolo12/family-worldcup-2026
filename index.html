@@ -164,6 +164,10 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .bcol .rh{font-weight:900;color:#b06a00;font-size:13px;display:flex;justify-content:space-between;align-items:baseline;padding:7px 11px;background:linear-gradient(180deg,#fff8ec,#fff);border:1px solid #f0e2c8;border-radius:10px;margin-bottom:9px}
 .bcol .rh .ct{font-weight:700;color:#9a8;font-size:11px}
 .bm{background:var(--card);border:1px solid #c0cab8;border-radius:12px;padding:9px 11px;margin-bottom:9px;box-shadow:0 1px 2px rgba(0,0,0,.04);position:relative}
+/* Two-sided bracket: centre column holds the Final (top) + 3rd-place (below). */
+.bcol-center{width:220px}
+.rh-final{justify-content:center !important;background:linear-gradient(180deg,#fff3d0,#fff) !important;border-color:#e9c87a !important;color:#9a6b00 !important;letter-spacing:.02em}
+.bcol-center .bm:first-of-type{border-color:var(--gold2);box-shadow:0 0 0 2px rgba(244,169,0,.35),0 2px 8px rgba(244,169,0,.18)}
 .bm.live{border-color:#f3b4b4;box-shadow:0 0 0 2px rgba(220,60,60,.12)}
 .bm.fam{border-color:var(--gold2);box-shadow:0 0 0 2px rgba(244,169,0,.16)}
 .bm .tr{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;padding:3px 0}
@@ -263,9 +267,9 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   <a href="#players">👥 Our Picks</a>
   <a href="#fancam">🎽 Fan Cam</a>
   <a href="#matches">⚽ Matches</a>
+  <a href="#bracket">🌐 Knockout</a>
   <a href="#pickoff">🤝 Pick-Off</a>
   <a href="#groups">📊 Group Tables</a>
-  <a href="#bracket">🌐 Knockout</a>
   <a href="#facts">💡 Fun Facts</a>
   <a href="#news">📰 News</a>
   <a href="#winners">🏆 Past Winners</a>
@@ -339,6 +343,16 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
     <div class="card" id="matchList"></div>
   </section>
 
+  <section class="sec" id="bracket">
+    <h2>🌐 Knockout</h2>
+    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28, and each winner carries forward through the rounds all the way to the Final. Knockout picks score two ways that stack: <b>name the team that advances</b> (5 pts in the Round of 32, rising each round — penalties count for who goes through) <b>plus</b> nail the <b>exact final score after all playing time</b> (90 min or extra time; penalty kicks are <b>not</b> added to the score) for a bonus. If you predict a draw, just tell us who you think wins the shootout.</p>
+    <button class="koshare" onclick="shareDailyCard()">📸 Share today's update</button>
+    <div id="koLiveBox"></div>
+    <div id="koFinalBox"></div>
+    <div id="aliveBox"></div>
+    <div id="bracketGrid"></div>
+  </section>
+
   <section class="sec" id="pickoff">
     <h2>🤝 The Pick-Off</h2>
     <p class="lead">The moment a game kicks off, everyone's predictions for it are revealed — and after full time you'll see who nailed it. Sealed until kickoff so nobody can peek! 🤫</p>
@@ -358,16 +372,6 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
     <h3 style="font-size:16px;font-weight:900;margin:24px 0 4px">🥉 Best Third-Place Race</h3>
     <p class="lead" style="margin-bottom:10px">The top 8 of the twelve 3rd-place teams grab the final knockout spots.</p>
     <div id="thirdsBox"></div>
-  </section>
-
-  <section class="sec" id="bracket">
-    <h2>🌐 Knockout</h2>
-    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28, and each winner carries forward through the rounds all the way to the Final. Knockout picks score two ways that stack: <b>name the team that advances</b> (5 pts in the Round of 32, rising each round — penalties count for who goes through) <b>plus</b> nail the <b>exact final score after all playing time</b> (90 min or extra time; penalty kicks are <b>not</b> added to the score) for a bonus. If you predict a draw, just tell us who you think wins the shootout.</p>
-    <button class="koshare" onclick="shareDailyCard()">📸 Share today's update</button>
-    <div id="koLiveBox"></div>
-    <div id="koFinalBox"></div>
-    <div id="aliveBox"></div>
-    <div id="bracketGrid"></div>
   </section>
 
   <section class="sec" id="facts">
@@ -1464,136 +1468,96 @@ function shareDailyCard(){
 function layoutAndConnectBracket(){
   const bkt=document.querySelector('.bkt');
   if(!bkt) return;
-  const oldSvg=bkt.querySelector('.bkt-svg');
-  if(oldSvg) oldSvg.remove();
-
+  const oldSvg=bkt.querySelector('.bkt-svg'); if(oldSvg) oldSvg.remove();
   bkt.style.position='relative';
+  const g=function(n){ return document.getElementById('bm-'+n); };
 
-  const koM=DATA.matches.filter(isKnk);
-  const byStage={};
-  koM.forEach(function(m){(byStage[m.stage]=byStage[m.stage]||[]).push(m);});
+  // Base columns: the two Round-of-32 stacks (left flows right, right flows left).
+  const L_R32=[74,77,73,75,83,84,81,82], R_R32=[76,78,79,80,86,88,85,87];
+  if(!g(L_R32[0])||!g(R_R32[0])) return;
 
-  const r32=bktSort(byStage['Round of 32']||[],'Round of 32');
-  if(!r32.length) return;
+  bkt.querySelectorAll('.bcol').forEach(function(col){ col.style.position='relative'; });
+  const baseCol=g(L_R32[0]).closest('.bcol');
+  const colH=baseCol.offsetHeight;                 // natural height of an R32 stack
 
-  // Make columns position:relative so offsetParent chain is: card → .bcol → .bkt
-  bkt.querySelectorAll('.bcol').forEach(function(col){col.style.position='relative';});
-
-  const r32Col=document.getElementById('bm-'+r32[0].n).closest('.bcol');
-  const colH=r32Col.offsetHeight; // natural height of R32 column — all columns adopt this
-
-  // Pre-measure all card heights before any repositioning
   const cardH={};
-  koM.forEach(function(m){
-    const el=document.getElementById('bm-'+m.n);
-    if(el) cardH[m.n]=el.offsetHeight;
-  });
+  DATA.matches.filter(isKnk).forEach(function(m){ const el=g(m.n); if(el) cardH[m.n]=el.offsetHeight; });
+  bkt.querySelectorAll('.bcol').forEach(function(col){ col.style.height=colH+'px'; });
 
-  // Fix all column heights so absolutely-positioned cards don't collapse them
-  bkt.querySelectorAll('.bcol').forEach(function(col){col.style.height=colH+'px';});
-
-  // Measure R32 card vertical centers relative to .bkt
+  // Measure the base R32 card centres (still in normal flow).
   const centerY={};
-  r32.forEach(function(m){
-    const el=document.getElementById('bm-'+m.n);
-    if(el) centerY[m.n]=r32Col.offsetTop+el.offsetTop+el.offsetHeight/2;
-  });
+  [L_R32,R_R32].forEach(function(ns){ ns.forEach(function(n){
+    const el=g(n); if(el){ const col=el.closest('.bcol'); centerY[n]=col.offsetTop+el.offsetTop+el.offsetHeight/2; }
+  }); });
 
-  // For each subsequent stage, compute target center = midpoint of its two source cards,
-  // then absolutely-position the card at that Y within its column.
-  const stageFlow=[
-    ['Round of 32','Round of 16'],
-    ['Round of 16','Quarterfinal'],
-    ['Quarterfinal','Semifinal'],
-    ['Semifinal','Final'],
+  // Place a derived card at the midpoint of its two feeders, absolutely within its column.
+  function place(n, ay, by){
+    const el=g(n); if(!el) return;
+    const cy=(ay+by)/2; centerY[n]=cy;
+    const col=el.closest('.bcol');
+    el.style.position='absolute'; el.style.left='0'; el.style.right='0';
+    el.style.width='auto'; el.style.marginBottom='0';
+    el.style.top=Math.round(cy-col.offsetTop-(cardH[n]||el.offsetHeight)/2)+'px';
+  }
+  // dest, feederA, feederB — ordered so feeders are resolved before dependents.
+  const FLOW=[
+    [89,74,77],[90,73,75],[93,83,84],[94,81,82],
+    [97,89,90],[98,93,94],[101,97,98],
+    [91,76,78],[92,79,80],[95,86,88],[96,85,87],
+    [99,91,92],[100,95,96],[102,99,100],
+    [104,101,102]
   ];
-  stageFlow.forEach(function(s){
-    const src=bktSort(byStage[s[0]]||[],s[0]);
-    const dst=bktSort(byStage[s[1]]||[],s[1]);
-    dst.forEach(function(match,i){
-      const el=document.getElementById('bm-'+match.n);
-      if(!el) return;
-      const a=src[i*2],b=src[i*2+1];
-      if(!a||!b||centerY[a.n]==null||centerY[b.n]==null) return;
-      const cy=(centerY[a.n]+centerY[b.n])/2;
-      centerY[match.n]=cy;
-      const col=el.closest('.bcol');
-      const topPx=Math.round(cy-col.offsetTop-(cardH[match.n]||el.offsetHeight)/2);
-      el.style.position='absolute';
-      el.style.left='0'; el.style.right='0'; el.style.width='auto';
-      el.style.marginBottom='0'; el.style.top=topPx+'px';
-    });
-  });
+  FLOW.forEach(function(f){ if(centerY[f[1]]!=null&&centerY[f[2]]!=null) place(f[0],centerY[f[1]],centerY[f[2]]); });
 
-  // Third Place: same vertical center as Final (midpoint of the two SF matches)
-  const sf=(byStage['Semifinal']||[]).slice().sort((a,b)=>a.n-b.n);
-  const tp=(byStage['Third Place']||[]);
-  if(sf.length===2&&tp.length===1){
-    const el=document.getElementById('bm-'+tp[0].n);
-    if(el&&centerY[sf[0].n]!=null&&centerY[sf[1].n]!=null){
-      const cy=(centerY[sf[0].n]+centerY[sf[1].n])/2;
-      centerY[tp[0].n]=cy;
-      const col=el.closest('.bcol');
-      const topPx=Math.round(cy-col.offsetTop-(cardH[tp[0].n]||el.offsetHeight)/2);
-      el.style.position='absolute'; el.style.left='0'; el.style.right='0';
-      el.style.width='auto'; el.style.marginBottom='0'; el.style.top=topPx+'px';
-    }
+  // Third-place play-off sits a couple of rows BELOW the Final in the centre column.
+  if(g(103)&&centerY[104]!=null){
+    const el=g(103), col=el.closest('.bcol');
+    const cy=centerY[104]+(cardH[104]||el.offsetHeight)+44; centerY[103]=cy;
+    el.style.position='absolute'; el.style.left='0'; el.style.right='0';
+    el.style.width='auto'; el.style.marginBottom='0';
+    el.style.top=Math.round(cy-col.offsetTop-(cardH[103]||el.offsetHeight)/2)+'px';
   }
 
-  // ── SVG connector lines ───────────────────────────────────────
-  const pairs=[];
-  stageFlow.forEach(function(s){
-    const src=bktSort(byStage[s[0]]||[],s[0]);
-    const dst=bktSort(byStage[s[1]]||[],s[1]);
-    for(let i=0;i<dst.length;i++){
-      if(src[i*2]&&src[i*2+1]) pairs.push({a:src[i*2].n,b:src[i*2+1].n,c:dst[i].n});
-    }
-  });
-  // 3P is LEFT of SF — connector goes rightward from 3P side → leftward from SF left edges
-  if(sf.length===2&&tp.length===1) pairs.push({a:sf[0].n,b:sf[1].n,c:tp[0].n,dashed:true,leftward:true});
-
+  // ── SVG connectors ──────────────────────────────────────────────
   const svgNS='http://www.w3.org/2000/svg';
   const svg=document.createElementNS(svgNS,'svg');
   svg.classList.add('bkt-svg');
   svg.setAttribute('width',bkt.scrollWidth); svg.setAttribute('height',bkt.scrollHeight);
   svg.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:0;overflow:visible';
-
-  pairs.forEach(function(pair){
-    const ea=document.getElementById('bm-'+pair.a);
-    const eb=document.getElementById('bm-'+pair.b);
-    const ec=document.getElementById('bm-'+pair.c);
-    if(!ea||!eb||!ec||centerY[pair.a]==null||centerY[pair.b]==null||centerY[pair.c]==null) return;
-    const col_a=ea.closest('.bcol'), col_c=ec.closest('.bcol');
-    const y1=centerY[pair.a], y2=centerY[pair.b];
-    const ym=(y1+y2)/2;
-    let x1,x2,xd,xm;
-    if(pair.leftward){
-      // SF is RIGHT of 3P: use SF left edges → meet in gap → 3P right edge
-      x1=col_a.offsetLeft;               // left edge of SF column (cards start at left:0)
-      x2=col_a.offsetLeft;               // same column for both SF matches
-      xd=col_c.offsetLeft+ec.offsetWidth; // right edge of 3P card
-      xm=(x1+xd)/2;                      // midpoint in the gap between 3P and SF
-    } else {
-      x1=col_a.offsetLeft+ea.offsetLeft+ea.offsetWidth;
-      x2=col_a.offsetLeft+eb.offsetLeft+eb.offsetWidth;
-      xd=col_c.offsetLeft+ec.offsetLeft;
-      xm=(Math.max(x1,x2)+xd)/2;
-    }
-    const col=pair.dashed?'rgba(160,120,40,0.38)':'rgba(176,120,0,0.45)';
-    const sw=pair.dashed?'1.5':'2';
-    const da=pair.dashed?'5,4':'';
-    function seg(d){
-      const p=document.createElementNS(svgNS,'path');
-      p.setAttribute('d',d);p.setAttribute('fill','none');
-      p.setAttribute('stroke',col);p.setAttribute('stroke-width',sw);
-      p.setAttribute('stroke-linecap','round');
-      if(da) p.setAttribute('stroke-dasharray',da);
-      svg.appendChild(p);
-    }
-    seg('M'+x1+','+y1+' H'+xm+' V'+ym);
-    seg('M'+x2+','+y2+' H'+xm+' V'+ym);
-    seg('M'+xm+','+ym+' H'+xd);
-  });
+  function seg(d,dashed){
+    const p=document.createElementNS(svgNS,'path');
+    p.setAttribute('d',d); p.setAttribute('fill','none');
+    p.setAttribute('stroke',dashed?'rgba(160,120,40,0.38)':'rgba(176,120,0,0.45)');
+    p.setAttribute('stroke-width',dashed?'1.5':'2'); p.setAttribute('stroke-linecap','round');
+    if(dashed) p.setAttribute('stroke-dasharray','5,4'); svg.appendChild(p);
+  }
+  // x of the edge a feeder line leaves from: L-side leaves its RIGHT edge, R-side its LEFT.
+  function feedX(n){ const el=g(n), col=el.closest('.bcol'); const left=col.offsetLeft+el.offsetLeft;
+    return col.dataset.side==='R' ? left : left+el.offsetWidth; }
+  // x of the edge a dest line enters: L-side enters LEFT edge, R-side enters RIGHT edge.
+  function destX(n){ const el=g(n), col=el.closest('.bcol'); const left=col.offsetLeft+el.offsetLeft;
+    return col.dataset.side==='R' ? left+el.offsetWidth : left; }
+  // Two feeders (same column) -> one dest.
+  function connectPair(c,a,b){
+    if(!g(a)||!g(b)||!g(c)||centerY[a]==null||centerY[b]==null||centerY[c]==null) return;
+    const xF=feedX(a), xD=destX(c), xm=(xF+xD)/2, yc=centerY[c];
+    seg('M'+xF+','+centerY[a]+' H'+xm+' V'+yc);
+    seg('M'+xF+','+centerY[b]+' H'+xm+' V'+yc);
+    seg('M'+xm+','+yc+' H'+xD);
+  }
+  // Single feeder -> dest (centre: each Semifinal into the Final / 3rd place).
+  function connectSingle(a,c,dashed){
+    if(!g(a)||!g(c)||centerY[a]==null||centerY[c]==null) return;
+    const aSide=g(a).closest('.bcol').dataset.side;
+    const cEl=g(c), cCol=cEl.closest('.bcol'), cLeft=cCol.offsetLeft+cEl.offsetLeft;
+    const xF=feedX(a), xD=(aSide==='R')?cLeft+cEl.offsetWidth:cLeft, xm=(xF+xD)/2;
+    seg('M'+xF+','+centerY[a]+' H'+xm+' V'+centerY[c]+' H'+xD, dashed);
+  }
+  [[89,74,77],[90,73,75],[93,83,84],[94,81,82],[97,89,90],[98,93,94],[101,97,98],
+   [91,76,78],[92,79,80],[95,86,88],[96,85,87],[99,91,92],[100,95,96],[102,99,100]]
+   .forEach(function(f){ connectPair(f[0],f[1],f[2]); });
+  connectSingle(101,104,false); connectSingle(102,104,false);   // into the Final
+  connectSingle(101,103,true);  connectSingle(102,103,true);    // SF losers -> 3rd place
 
   bkt.insertBefore(svg,bkt.firstChild);
 }
@@ -1621,10 +1585,8 @@ function renderBracket(){
     return '<div class="tr'+(cls?' '+cls:'')+(animCls||'')+'">'+nm+sg+'</div>';
   }
 
-  document.getElementById('bracketGrid').innerHTML =
-    '<div class="bkt">'+stages.map(function(st){
-      const games=bktSort(byStage[st],st);
-      const cards=games.map(function(m){
+  // Build one bracket card (.bm) for a match — keeps every live/interactive feature.
+  function buildCard(m){
         // Resolve every slot — group positions, third-place assignment, and winners advancing through the bracket.
         const _t=koResolveTeams(m.n,ctx), hN=_t.h, aN=_t.a;
         const hJustIn = !isTeam(m.h) && isTeam(hN);
@@ -1663,9 +1625,30 @@ function renderBracket(){
           teamRow(hN, hs, hCls, hJustIn, hAnim)+
           teamRow(aN, as, aCls, aJustIn, aAnim)+
           '<div class="ml"><span>Match '+m.n+' · '+fmtD(m.date)+'</span>'+status+'</div></div>';
-      }).join('');
-      const cnt=games.length+' '+(games.length>1?'matches':'match');
-      return '<div class="bcol"><div class="rh"><span>'+(label[st]||st)+'</span><span class="ct">'+cnt+'</span></div>'+cards+'</div>';
+  }
+
+  // Two-sided bracket: left half flows RIGHT, right half flows LEFT, both meeting
+  // at a centered Final. Column match-numbers below double as the source of truth
+  // for the feed paths (they mirror KO_FEED), so the tree is always accurate.
+  const byN2={}; DATA.matches.forEach(function(m){ byN2[m.n]=m; });
+  const COLS=[
+    {side:'L', round:'Round of 32',  ns:[74,77,73,75,83,84,81,82]},
+    {side:'L', round:'Round of 16',  ns:[89,90,93,94]},
+    {side:'L', round:'Quarterfinal', ns:[97,98]},
+    {side:'L', round:'Semifinal',    ns:[101]},
+    {side:'C', round:'Final',        ns:[104,103]},
+    {side:'R', round:'Semifinal',    ns:[102]},
+    {side:'R', round:'Quarterfinal', ns:[99,100]},
+    {side:'R', round:'Round of 16',  ns:[91,92,95,96]},
+    {side:'R', round:'Round of 32',  ns:[76,78,79,80,86,88,85,87]},
+  ];
+  document.getElementById('bracketGrid').innerHTML =
+    '<div class="bkt">'+COLS.map(function(col){
+      const cards=col.ns.map(function(n){ return byN2[n]?buildCard(byN2[n]):''; }).join('');
+      const hdr = col.side==='C'
+        ? '<div class="rh rh-final"><span>🏆 Final</span></div>'
+        : '<div class="rh"><span>'+(label[col.round]||col.round)+'</span></div>';
+      return '<div class="bcol side-'+col.side+(col.side==='C'?' bcol-center':'')+'" data-side="'+col.side+'" data-round="'+col.round+'">'+hdr+cards+'</div>';
     }).join('')+'</div>';
   KO_PRIMED=true; // after the first paint, future changes animate
   setTimeout(layoutAndConnectBracket, 0); // align cards + draw SVG lines after DOM paint
