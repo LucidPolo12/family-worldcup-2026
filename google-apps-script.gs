@@ -31,13 +31,17 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Picks') || ss.insertSheet('Picks');
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(['timestamp', 'name', 'match', 'predH', 'predA']);
+      sheet.appendRow(['timestamp', 'name', 'match', 'predH', 'predA', 'predAdv']);
+    } else if (sheet.getRange(1, 6).getValue() !== 'predAdv') {
+      sheet.getRange(1, 6).setValue('predAdv');   // backfill header on existing sheets
     }
     var name = (data.name || '').toString().trim();
     var picks = data.picks || [];
     var now = new Date();
+    // predAdv: for a knockout pick whose predicted score is a TIE, 'H'/'A' marks
+    // which team the player says advances on penalties (blank otherwise).
     var rows = picks.map(function (p) {
-      return [now, name, p.n, p.ph, p.pa];
+      return [now, name, p.n, p.ph, p.pa, p.adv || ''];
     });
     // Champion & Podium picks (the "final four"). Stored in the SAME Picks sheet
     // using text codes in the "match" column; the team name goes in predH.
@@ -45,7 +49,7 @@ function doPost(e) {
     if (f4) {
       [['CHAMP', f4.champ], ['RUN', f4.run], ['THIRD', f4.third], ['FOURTH', f4.fourth]]
         .forEach(function (pair) {
-          if (pair[1]) rows.push([now, name, pair[0], pair[1], '']);
+          if (pair[1]) rows.push([now, name, pair[0], pair[1], '', '']);
         });
     }
     // Golden Boot picks (top scorer predictions). Stored as GB1/GB2/GB3 in the match column.
@@ -53,11 +57,11 @@ function doPost(e) {
     if (gb) {
       [['GB1', gb.pick1], ['GB2', gb.pick2], ['GB3', gb.pick3]]
         .forEach(function (pair) {
-          if (pair[1]) rows.push([now, name, pair[0], pair[1], '']);
+          if (pair[1]) rows.push([now, name, pair[0], pair[1], '', '']);
         });
     }
     if (rows.length) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
+      sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
       triggerPublish_();   // tell GitHub to publish now (best-effort)
     }
     return ContentService

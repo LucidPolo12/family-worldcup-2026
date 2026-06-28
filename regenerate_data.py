@@ -22,15 +22,28 @@ PHOTOS = {"Nonno":"nonno-bobblehead.jpg","Emrys":"emrys-bobblehead.jpg",
           "River":"river-bobblehead.jpg","Xavier":"xavier-bobblehead.jpg",
           "Ewan":"ewan-bobblehead.jpg"}
 
-# Escalating knockout point values: (correct result pts, exact score pts)
-STAGE_PTS = {
-    "Group Stage":  (3,  8),
-    "Round of 32":  (5,  12),
-    "Round of 16":  (8,  18),
-    "Quarterfinal": (12, 25),
-    "Semifinal":    (18, 35),
-    "Third Place":  (12, 25),
-    "Final":        (25, 50),
+# ---- Scoring tables -----------------------------------------------------------
+# GROUP STAGE (unchanged): correct outcome = 3, exact score = 8 (exact REPLACES
+# the 3, it does not stack). Judged by score sign (win / draw / loss).
+GROUP_PTS = (3, 8)   # (correct_outcome, exact_score_total)
+
+# KNOCKOUT STAGE (new model): two INDEPENDENT, ADDITIVE components per match —
+#   (1) advance_pts  if you named the team that actually advances (incl. via
+#       penalties); for a non-tied predicted score the advancing side is the
+#       higher score, for a tied predicted score it is the player's explicit
+#       penalty pick.
+#   (2) exact_bonus  if your predicted final score (after all playing time,
+#       penalties excluded) equals the actual final score.
+# Round of 32 is 5 + 7 = 12. Later rounds keep the previously-announced totals,
+# split into advance + exact-bonus (advance == old "correct result" value).
+#   (advance_pts, exact_bonus)  ->  max per match = advance_pts + exact_bonus
+KO_PTS = {
+    "Round of 32":  (5,  7),    # max 12
+    "Round of 16":  (8,  10),   # max 18
+    "Quarterfinal": (12, 13),   # max 25
+    "Semifinal":    (18, 17),   # max 35
+    "Third Place":  (12, 13),   # max 25
+    "Final":        (25, 25),   # max 50
 }
 
 def match_stage(n):
@@ -43,6 +56,20 @@ def match_stage(n):
     if n == 103: return "Third Place"
     return "Final"
 
+def adv_side(h, a, manual=None):
+    """Which side advances given a FINAL playing-time score.
+    'H' = home/Team-A side, 'A' = away/Team-B side, None = unknown.
+    Decisive score -> the higher side. Tied score (penalty shootout) -> the
+    'manual' override (H/A/home/away), since the score alone can't tell us."""
+    if h is None or a is None:
+        return None
+    if h > a: return "H"
+    if a > h: return "A"
+    m = ("" if manual is None else str(manual).strip().upper())
+    if m in ("H", "HOME"): return "H"
+    if m in ("A", "AWAY"): return "A"
+    return None   # tied & penalty winner not recorded yet
+
 def compute_ranks(standings):
     """Rank purely by points (ties share a rank), matching the front-end logic."""
     s = sorted(standings, key=lambda x: (-x["matchPts"], -x["exact"], -x["correct"], x["name"]))
@@ -53,13 +80,42 @@ def compute_ranks(standings):
         ranks[x["name"]] = rank
     return ranks
 
-def pts(ph, pa, ah, aa, n=1):
-    """Return (points, is_exact). Points is None if result not yet known."""
-    if None in (ph, pa, ah, aa): return None, False
-    correct_pts, exact_pts = STAGE_PTS[match_stage(n)]
-    if ph == ah and pa == aa: return exact_pts, True
-    sign = lambda x, y: (x > y) - (x < y)
-    return (correct_pts if sign(ph, pa) == sign(ah, aa) else 0), False
+def pred_adv_side(ph, pa, padv=None):
+    """Predicted advancing side from a player's pick.
+    Non-tied predicted score -> higher side (auto). Tied predicted score ->
+    the player's explicit penalty pick ('H'/'A'); None if they didn't choose."""
+    if ph is None or pa is None:
+        return None
+    if ph > pa: return "H"
+    if pa > ph: return "A"
+    return padv if padv in ("H", "A") else None
+
+def pts(ph, pa, ah, aa, n=1, padv=None, aadv=None):
+    """Return (points, is_exact). Points is None if result not yet known.
+
+    Group stage: unchanged (3 correct outcome / 8 exact, exact replaces).
+    Knockout: advance_pts (correct advancing team, penalties included) PLUS
+    exact_bonus (exact final playing-time score) — the two stack independently.
+    `padv` = player's penalty pick side for a tied predicted score;
+    `aadv` = the side that actually advanced (from adv_side())."""
+    if None in (ph, pa, ah, aa):
+        return None, False
+    stage = match_stage(n)
+    if stage == "Group Stage":
+        correct_pts, exact_pts = GROUP_PTS
+        if ph == ah and pa == aa: return exact_pts, True
+        sign = lambda x, y: (x > y) - (x < y)
+        return (correct_pts if sign(ph, pa) == sign(ah, aa) else 0), False
+    # ---- knockout ----
+    advance_pts, exact_bonus = KO_PTS[stage]
+    total = 0
+    p_side = pred_adv_side(ph, pa, padv)
+    if p_side is not None and aadv is not None and p_side == aadv:
+        total += advance_pts
+    is_exact = (ph == ah and pa == aa)
+    if is_exact:
+        total += exact_bonus
+    return total, is_exact
 
 def score_golden_boot(gb, top_scorers):
     """Score Golden Boot picks against the official top-3 scorer list.
@@ -116,14 +172,24 @@ def main():
         except Exception:
             pjson = {}
 
-    results = {}
+    # A knockout match that ends level is decided on penalties; the score alone
+    # can't say who advanced, so the admin records the advancing SIDE by hand in
+    # the new "Advancing (H/A)" column (AJ) of the Match Predictions sheet — or as
+    # an optional 3rd element in a results.json entry ([h, a, "H"|"A"]).
+    results, adv_manual = {}, {}
     for r in range(4, 108):
         n = r - 3
         g, h = ws["G"+str(r)].value, ws["H"+str(r)].value
-        if n in rstore:
-            results[n] = rstore[n]
+        rv = rstore.get(n)
+        if rv is not None:
+            results[n] = [rv[0], rv[1]]
+            if len(rv) > 2 and rv[2]:
+                adv_manual[n] = rv[2]
         elif g is not None and h is not None:
             results[n] = [g, h]
+        aj = ws["AJ"+str(r)].value          # manual penalty-winner override
+        if aj not in (None, ""):
+            adv_manual[n] = aj
 
     # "generated" = date of the first match with no result yet (the next slate to pick)
     generated = None
@@ -135,6 +201,14 @@ def main():
 
     mres = {n: (results[n][0], results[n][1]) if n in results else (None, None)
             for n in range(1, 105)}
+
+    # Actual advancing side per match: auto for decisive scores, manual for ties.
+    advancing = {}
+    for n in range(73, 105):              # knockout matches only
+        ah, aa = mres[n]
+        side = adv_side(ah, aa, adv_manual.get(n))
+        if side:
+            advancing[n] = side
 
     # Load existing data.json early: need topScorers before the standings loop,
     # and probs + rank snapshots for the output.
@@ -155,14 +229,23 @@ def main():
         for r in range(4, 108):
             n = r - 3
             ov = pj.get(str(n))
+            padv = None
             if ov:
                 ph, pa = ov[0], ov[1]
+                if len(ov) > 2 and ov[2] in ("H", "A"):
+                    padv = ov[2]          # explicit penalty pick on a tied score
             else:
                 ph, pa = ws[hc+str(r)].value, ws[ac+str(r)].value
             if ph is None and pa is None: continue
             ah, aa = mres[n]
-            p, is_exact = pts(ph, pa, ah, aa, n)
-            picks.append({"n": n, "ph": ph, "pa": pa, "pts": p})
+            aadv = advancing.get(n)
+            p, is_exact = pts(ph, pa, ah, aa, n, padv=padv, aadv=aadv)
+            pk = {"n": n, "ph": ph, "pa": pa, "pts": p}
+            # store the predicted advancing side for knockout picks (for display)
+            if n >= 73:
+                ps = pred_adv_side(ph, pa, padv)
+                if ps: pk["adv"] = ps
+            picks.append(pk)
             if p is not None:
                 mp += p
                 if is_exact: ex += 1
@@ -186,15 +269,23 @@ def main():
     if old_today and old_today.get("date") != today_str:
         prev_ranks = old_today
 
+    # stagePts is what the front-end reads. For knockout rounds "correct" is the
+    # advance value and "exact" is the per-match max (advance + exact-bonus), so
+    # the existing badge/legend logic keeps working with the new additive model.
+    stage_pts_out = {"Group Stage": {"correct": GROUP_PTS[0], "exact": GROUP_PTS[1]}}
+    for stg, (adv_p, ex_b) in KO_PTS.items():
+        stage_pts_out[stg] = {"correct": adv_p, "exact": adv_p + ex_b, "advance": adv_p, "bonus": ex_b}
+
     data = {
         "generated": generated,
         "standings": standings,
         "results": results,
+        "advancing": advancing,
         "photos": PHOTOS,
         "probs": probs,
         "prevRanks": prev_ranks,
         "ranksToday": {"date": today_str, "ranks": cur_ranks},
-        "stagePts": {k: {"correct": v[0], "exact": v[1]} for k, v in STAGE_PTS.items()},
+        "stagePts": stage_pts_out,
         "topScorers": top_scorers,
     }
     with open(OUT, "w", encoding="utf-8") as f:

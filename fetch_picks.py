@@ -66,7 +66,7 @@ def main():
     header = [h.strip().lower() for h in rows[0]]
     def col(name):
         return header.index(name) if name in header else None
-    ci = {k: col(k) for k in ("timestamp", "name", "match", "predh", "preda")}
+    ci = {k: col(k) for k in ("timestamp", "name", "match", "predh", "preda", "predadv")}
     kos = ko_table()
 
     # Champion & Podium ("final four") picks share the same sheet, flagged by a
@@ -120,12 +120,22 @@ def main():
             ph = int(float(r[ci["predh"]])); pa = int(float(r[ci["preda"]]))
         except (ValueError, IndexError, TypeError):
             continue
+        # Knockout penalty pick: predAdv holds 'H' or 'A' (who advances if the
+        # predicted score is a tie). Only meaningful for a tied knockout pick.
+        adv = ""
+        if ci["predadv"] is not None:
+            try:
+                adv = (r[ci["predadv"]] or "").strip().upper()
+            except (IndexError, AttributeError):
+                adv = ""
+        adv = adv if adv in ("H", "A") else ""
+        score = [ph, pa, adv] if (n > 72 and ph == pa and adv) else [ph, pa]
         # enforce kickoff lock
         if ts and n in kos:
             ki = ko_instant(*kos[n])
             if ki and ts >= ki:
                 continue
-        latest[(name, n)] = (ts, [ph, pa])   # sheet rows are in append order, so last wins
+        latest[(name, n)] = (ts, score)   # sheet rows are in append order, so last wins
 
     picks = {}
     for (name, n), (ts, score) in latest.items():

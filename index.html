@@ -123,6 +123,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 .pbar{grid-column:1/-1;display:flex;height:15px;border-radius:6px;overflow:hidden;margin-top:9px;font-size:9px;font-weight:800;color:#fff}
 .pseg{display:flex;align-items:center;justify-content:center;min-width:0;white-space:nowrap}
 .pseg.ph{background:#1aa75a}.pseg.pd{background:#97a4ad}.pseg.pa{background:#2f6fd0}
+.advtag{font-size:10px;font-weight:800;color:#b06a00;background:#fff4e0;border:1px solid #f3dca6;border-radius:999px;padding:0 6px;margin-left:5px;white-space:nowrap}
 .pbl{grid-column:1/-1;display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px}
 .pbl .pdash{font-weight:800;color:#8794a0}
 .wtbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -361,7 +362,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 
   <section class="sec" id="bracket">
     <h2>🌐 Knockout</h2>
-    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28, and each winner carries forward through the rounds all the way to the Final. Knockout picks are scored on the result after 90 minutes; extra time and penalties don't count.</p>
+    <p class="lead">Where the World Cup is won. Win and you advance, lose and you're out — real teams drop into the bracket the moment a group spot is clinched (marked <span style="color:#0a7d3c;font-weight:800">✓ in</span>), starting with the Round of 32 on June 28, and each winner carries forward through the rounds all the way to the Final. Knockout picks score two ways that stack: <b>name the team that advances</b> (5 pts in the Round of 32, rising each round — penalties count for who goes through) <b>plus</b> nail the <b>exact final score after all playing time</b> (90 min or extra time; penalty kicks are <b>not</b> added to the score) for a bonus. If you predict a draw, just tell us who you think wins the shootout.</p>
     <button class="koshare" onclick="shareDailyCard()">📸 Share today's update</button>
     <div id="koLiveBox"></div>
     <div id="koFinalBox"></div>
@@ -400,9 +401,10 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
       <div class="helptip">⭐ You don't have to pick every game — pick as many or as few as you like.</div>
 
       <div class="hq">🏆 The Leaderboard</div>
-      <p>Scoring: <b>correct result</b> (win, lose or draw) scores points that grow each round — <b>3 pts</b> in the group stage, rising to <b>25 pts</b> in the Final. Nail the <b>exact score</b> for a much bigger bonus: <b>8 pts</b> in the group stage up to <b>50 pts</b> for the Final. Most points wins!</p>
+      <p><b>Group stage:</b> <b>correct result</b> (win, lose or draw) = <b>3 pts</b>; <b>exact score</b> = <b>8 pts</b>.</p>
+      <p><b>Knockouts:</b> name the <b>team that advances</b> (penalties count!) for the "result" points, <b>plus</b> a bonus for the <b>exact final score</b> after all playing time — extra time included, penalty kicks not. The two add up to the per-match max below, growing each round all the way to <b>50 pts</b> in the Final.</p>
       <table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0 4px">
-        <tr style="color:var(--gold);font-weight:700;text-align:left"><th style="padding:3px 6px">Round</th><th style="padding:3px 6px">Correct result</th><th style="padding:3px 6px">Exact score</th></tr>
+        <tr style="color:var(--gold);font-weight:700;text-align:left"><th style="padding:3px 6px">Round</th><th style="padding:3px 6px">Result / Advance</th><th style="padding:3px 6px">+ Exact = Max</th></tr>
         <tr><td style="padding:3px 6px">Group Stage</td><td style="padding:3px 6px">3 pts</td><td style="padding:3px 6px">8 pts</td></tr>
         <tr><td style="padding:3px 6px">Round of 32</td><td style="padding:3px 6px">5 pts</td><td style="padding:3px 6px">12 pts</td></tr>
         <tr><td style="padding:3px 6px">Round of 16</td><td style="padding:3px 6px">8 pts</td><td style="padding:3px 6px">18 pts</td></tr>
@@ -916,19 +918,25 @@ function pocardHtml(m){
              : '<span class="postat live">🔴 LIVE'+(lv.clock?(' '+lv.clock):'')+'</span>'; }
   else { scoreHtml='vs'; statHtml='<span class="postat live">🔴 IN PLAY</span>'; scored=false; }
   const liveScored = hasLive && lv.state!=='post';
-  let picks=DATA.standings.map(function(p){const pk=p.picks.find(function(k){return k.n===m.n;}); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts}:null;}).filter(Boolean);
+  const knk=isKnk(m);
+  let picks=DATA.standings.map(function(p){const pk=p.picks.find(function(k){return k.n===m.n;}); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts,adv:pk.adv}:null;}).filter(Boolean);
   const sp=stagePtsFor(m.n);
   const ptOf = function(p){ return done ? (p.pts||0) : (scored ? provPts(p.ph,p.pa,sh,sa,m.n) : -1); };
   if(scored) picks.sort(function(a,b){ return (ptOf(b)-ptOf(a))||a.name.localeCompare(b.name); });
   else picks.sort(function(a,b){ return a.name.localeCompare(b.name); });
   const rows = picks.length ? picks.map(function(p){
     let badge='·', win='';
-    if(scored){ const pp=ptOf(p); badge=(pp===sp.exact?'🔥 '+sp.exact:(pp===sp.correct?'✅ '+sp.correct:'0'))+(done?'':'*'); win=pp>0?'win':''; }
+    if(scored){ const pp=ptOf(p); badge=(pp===sp.exact?'🔥 '+sp.exact:(pp>0?'✅ '+pp:'0'))+(done?'':'*'); win=pp>0?'win':''; }
+    // For knockout picks, show who they backed to go through (only meaningful on a tie).
+    let advtag='';
+    if(knk && p.adv && p.ph===p.pa){ advtag=' <span class="advtag">→ '+(p.adv==='H'?m.h:m.a)+'</span>'; }
     return '<div class="porow '+win+'"><div class="pn">'+pavatar(p.name,24)+p.name+'</div>'+
-      '<div class="pp">'+p.ph+'–'+p.pa+'</div><div class="pb">'+badge+'</div></div>';
+      '<div class="pp">'+p.ph+'–'+p.pa+advtag+'</div><div class="pb">'+badge+'</div></div>';
   }).join('') : '<div class="porow"><div class="pn" style="color:var(--muted);font-weight:600">No one predicted this one 🤷</div><div></div><div></div></div>';
   let foot='';
   if(done){ const ex=picks.filter(function(p){return isExactPick(p.ph,p.pa,m.ah,m.aa);}).map(function(p){return p.name;}); if(ex.length) foot='<div class="poexact">🔥 Exact score nailed by: '+ex.join(', ')+'</div>'; }
+  if(done && knk && m.ah===m.aa){ const side=(DATA.advancing||{})[m.n], w=side==='H'?m.h:(side==='A'?m.a:null);
+    if(w) foot+='<div class="poexact">🥅 '+m.ah+'–'+m.aa+' after extra time · <b>'+w+'</b> advanced on penalties</div>'; }
   else if(liveScored){ foot='<div class="poexact">🔴 Live points — they update as the score changes and lock at full time. (* = provisional)</div>'; }
   return '<div class="pocard"><div class="pohead"><div class="mt">'+flag(m.h)+' '+m.h+'<span class="sc">'+scoreHtml+'</span>'+m.a+' '+flag(m.a)+'</div>'+statHtml+'</div>'+rows+foot+'</div>';
 }
@@ -1173,8 +1181,16 @@ function koOutcome(n, ctx){
   ctx.oCache[n]={winner:null,loser:null};          // cycle guard
   const t=koResolveTeams(n,ctx), r=ctx.R[n];
   let out={winner:null,loser:null};
-  if(t && isTeam(t.h) && isTeam(t.a) && r && r[0]!==r[1]){
-    out = r[0]>r[1] ? {winner:t.h,loser:t.a} : {winner:t.a,loser:t.h};
+  if(t && isTeam(t.h) && isTeam(t.a) && r){
+    if(r[0]!==r[1]){
+      out = r[0]>r[1] ? {winner:t.h,loser:t.a} : {winner:t.a,loser:t.h};
+    } else {
+      // Level after all playing time -> penalties. Use the recorded advancing
+      // side (DATA.advancing) so the bracket flows on past a shootout.
+      const side=(DATA.advancing||{})[n];
+      if(side==='H') out={winner:t.h,loser:t.a};
+      else if(side==='A') out={winner:t.a,loser:t.h};
+    }
   }
   ctx.oCache[n]=out; return out;
 }

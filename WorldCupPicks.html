@@ -50,6 +50,16 @@
   .match.locked .sbtn{display:none}
   .lockmsg{font-size:11px;color:#b06a00;font-weight:800;white-space:nowrap}
   .lockpill{font-size:10px;font-weight:800;color:#b06a00;background:#fff4e0;border:1px solid #f3dca6;border-radius:999px;padding:1px 7px;margin-left:6px}
+  .advsec{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+  .advcap{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .advauto{margin-top:6px;font-size:12.5px;font-weight:700;color:#0a7d3c}
+  .advpen{margin-top:8px}
+  .advq{font-size:12.5px;font-weight:800;color:#b06a00;margin-bottom:6px}
+  .advneed{font-size:10px;font-weight:800;color:#fff;background:#c0392b;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+  .advbtns{display:flex;gap:8px}
+  .advopt{flex:1;text-align:center;padding:9px 8px;border:1.5px solid var(--line);background:#fff;border-radius:11px;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer}
+  .advopt.on{background:#fff4e0;border-color:#e0a500;color:#8a5200;box-shadow:0 0 0 2px rgba(224,165,0,.25)}
+  .advopt.off{opacity:.55}
   .tabbar{display:flex;gap:8px;margin-bottom:14px}
   .tabbtn{flex:1;padding:12px 8px;border:1.5px solid var(--line);background:#fff;border-radius:12px;font-size:14px;font-weight:800;color:var(--muted)}
   .tabbtn.active{background:var(--green);border-color:var(--green);color:#fff}
@@ -119,11 +129,15 @@ const KEY = "wc2026picks_v1";
 // Paste your Google Apps Script Web App URL here after deploying it (see PICKS_SETUP.md).
 // Until then the button just shows a copy-and-send text as a fallback.
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpiPJIpU6VUL95gmy8zDuUs1EL5dRclP93wFuxSrE1UWOm2UfPovGz_b5i7m9o8A/exec";
-let state = {name:"", scores:{}}; // scores[n] = {h:null|num, a:null|num}
+let state = {name:"", scores:{}, adv:{}}; // scores[n]={h,a}; adv[n]="H"|"A" (penalty pick on a tied knockout score)
 try{ const s=localStorage.getItem(KEY); if(s) state=JSON.parse(s); }catch(e){}
+if(!state.adv) state.adv={};
 
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 function isKnock(f){ return f.stage && f.stage.indexOf("Group")<0; }
+// Per-round maximum match points (advance + exact-score bonus).
+const KO_MAX = {"Round of 32":12,"Round of 16":18,"Quarterfinal":25,"Semifinal":35,"Third Place":25,"Final":50};
+function isTie(n){ const s=state.scores[n]; return !!s && s.h!=null && s.a!=null && s.h===s.a; }
 // Kickoff handling: parse the ET kickoff into an absolute instant, show in local time, lock at kickoff.
 function koInstant(dateStr, ko){
   const m=(ko||'').match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -342,11 +356,40 @@ function renderList(){
         '</div>'+
         '<div class="team away">'+__d.a+'</div>'+
       '</div>'+
+      (isKnock(f) ? '<div class="advsec" id="adv'+f.n+'">'+advInner(f,locked)+'</div>' : '')+
     '</div>';
   }).join("");
   listEl.querySelectorAll(".sbtn").forEach(b=>b.onclick=()=>step(+b.dataset.n,b.dataset.s,+b.dataset.d));
+  bindAdv();
   updateCount();
 }
+// ---- Knockout advance / penalty-winner UI -------------------------------------
+// Score field = final score after all playing time (penalties excluded). If the
+// predicted score is a TIE, the player must pick who advances on penalties; if
+// it's decisive, the higher-scoring team advances automatically.
+function advInner(f, locked){
+  const d=disp(f), max=KO_MAX[f.stage]||12;
+  const hv=val(f.n,"h"), av=val(f.n,"a"), picked=hv!=null&&av!=null;
+  const cap='<div class="advcap">⚽ Final score after all playing time — 90 min or extra time; <b>penalty kicks not counted</b>. Worth up to <b>'+max+' pts</b> (5–25 advance + score bonus).</div>';
+  if(!picked) return cap;
+  if(hv!==av){
+    const w = hv>av ? d.h : d.a;
+    return cap+'<div class="advauto">✅ <b>'+w+'</b> will automatically be selected to advance.</div>';
+  }
+  // tied score -> require a penalty-winner choice
+  const sel=state.adv[f.n];
+  const need = locked ? '' : (sel? '' : '<span class="advneed">required</span>');
+  const btn=(side,team)=> locked
+      ? '<div class="advopt '+(sel===side?'on':'off')+'">'+team+'</div>'
+      : '<div class="advopt '+(sel===side?'on':'')+'" data-adv="'+f.n+'" data-side="'+side+'">'+team+'</div>';
+  return cap+'<div class="advpen"><div class="advq">🥅 Who advances on penalties? '+need+'</div>'+
+    '<div class="advbtns">'+btn('H',d.h)+btn('A',d.a)+'</div></div>';
+}
+function renderAdv(n){ const f=FIX.find(x=>x.n===n); const box=document.getElementById("adv"+n);
+  if(f&&box){ box.innerHTML=advInner(f,isStarted(f)); bindAdv(); } }
+function bindAdv(){ listEl.querySelectorAll(".advopt[data-adv]").forEach(b=>b.onclick=()=>setAdv(+b.dataset.adv,b.dataset.side)); }
+function setAdv(n,side){ const f=FIX.find(x=>x.n===n); if(f&&isStarted(f)) return;
+  state.adv[n]=side; save(); renderAdv(n); }
 function step(n,side,d){
   const fx=FIX.find(x=>x.n===n);
   if(fx && isStarted(fx)) return; // locked at kickoff
@@ -360,6 +403,7 @@ function step(n,side,d){
   const f=FIX.find(x=>x.n===n);
   const picked = state.scores[n].h!=null && state.scores[n].a!=null;
   document.getElementById("m"+n).classList.toggle("picked",picked);
+  if(f && isKnock(f)) renderAdv(n);   // refresh auto-advance / penalty selector
   save(); updateCount();
 }
 function pickedList(){
@@ -391,7 +435,11 @@ function buildText(){
   const who = state.name || "(no name!)";
   let lines = ["\uD83C\uDFC6 Family WC Picks \u2014 "+who];
   if(!picks.length){ lines.push("(no upcoming games picked yet)"); }
-  picks.forEach(f=>{ const d=disp(f); lines.push("M"+f.n+": "+d.h+" "+state.scores[f.n].h+"-"+state.scores[f.n].a+" "+d.a); });
+  picks.forEach(f=>{ const d=disp(f); const s=state.scores[f.n];
+    let line="M"+f.n+": "+d.h+" "+s.h+"-"+s.a+" "+d.a;
+    if(isKnock(f) && s.h===s.a){ const w=state.adv[f.n]==="H"?d.h:(state.adv[f.n]==="A"?d.a:null);
+      line += w ? " ("+w+" advance on pens)" : " (⚠ pick who advances!)"; }
+    lines.push(line); });
   return lines.join("\n");
 }
 const modal=document.getElementById("modal"), out=document.getElementById("out");
@@ -399,7 +447,13 @@ function submitPicks(){
   if(!state.name){ alert("Pick your name at the top first! \uD83D\uDE0A"); window.scrollTo({top:0,behavior:"smooth"}); return; }
   const picks=sendable();
   if(!picks.length){ alert("Tap some scores for upcoming games first. (Games that already kicked off are locked.)"); return; }
-  const payload={ name: state.name, picks: picks.map(f=>({n:f.n, ph:state.scores[f.n].h, pa:state.scores[f.n].a})) };
+  // Knockout tie must name a penalty winner before sending.
+  const missing=picks.filter(f=>isKnock(f) && state.scores[f.n].h===state.scores[f.n].a && !state.adv[f.n]);
+  if(missing.length){ const f=missing[0]; const d=disp(f);
+    alert("You predicted a tie for Match "+f.n+" ("+d.h+" vs "+d.a+"). Tap who advances on penalties before submitting. 🥅");
+    const el=document.getElementById("m"+f.n); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  const payload={ name: state.name, picks: picks.map(f=>{ const o={n:f.n, ph:state.scores[f.n].h, pa:state.scores[f.n].a};
+    if(isKnock(f) && state.scores[f.n].h===state.scores[f.n].a) o.adv=state.adv[f.n]||""; return o; }) };
   const live = SCRIPT_URL && SCRIPT_URL.indexOf("PASTE_")<0;
   if(live){
     fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(){},function(){});
