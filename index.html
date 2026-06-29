@@ -1024,7 +1024,7 @@ function renderChips(){
 }
 function isKnk(m){ return m.stage && m.stage.indexOf('Group')<0; }
 function renderMatches(){
-  const items=DATA.matches.filter(m=>m.date===mf);
+  const items=DATA.matches.filter(m=>m.date===mf).sort(function(a,b){ return matchStart(a)-matchStart(b); }); // chronological by kickoff
   let kctx=null; try{ kctx=koContext(); }catch(e){}   // resolve knockout slots -> real teams as they're known
   document.getElementById('matchList').innerHTML=items.map(m=>{
     let mh=m.h, ma=m.a;
