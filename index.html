@@ -1743,10 +1743,13 @@ function applyData(d){
   if(d.generated) DATA.generated=d.generated;
   if(d.prevRanks) DATA.prevRanks=d.prevRanks;
   if(d.ranksToday) DATA.ranksToday=d.ranksToday;
+  if(d.stagePts) DATA.stagePts=d.stagePts;       // knockout point values (5/12 ... 25/50)
+  if(d.advancing) DATA.advancing=d.advancing;    // who advanced (incl. penalty winners)
+  if(d.topScorers) DATA.topScorers=d.topScorers; // Golden Boot
   if(d.results){ DATA.matches.forEach(function(m){ var r=d.results[m.n]||d.results[String(m.n)]; if(r){ m.ah=r[0]; m.aa=r[1]; } }); }
   reRenderAll();
 }
-function loadData(){ fetch('data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(applyData).catch(function(){}); }
+function loadData(){ fetch('data.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(applyData).catch(function(){}); }
 loadData();
 // Re-pull the published data every 60s so newly submitted picks and freshly
 // entered results show up without anyone needing to reload the page.
