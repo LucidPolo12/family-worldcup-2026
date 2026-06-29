@@ -1,28 +1,36 @@
-🌅 Good morning, family! Monday, June 29 — and the KNOCKOUT STAGE is officially here. Win or go home from now on! ⚽🏆
+⚽ WORLD CUP FAMILY CHALLENGE — Monday 6/29 ⚽
 
-✨ A few things are new in the app:
-• Knockout games score differently now — you earn points for picking the team that ADVANCES (5 pts this round, climbing higher every round), PLUS a bonus for nailing the exact score.
-• Predicting a draw? Just tap who you think wins the penalty shootout — that's your "advancing" team.
-• Extra time counts toward the score, but penalty kicks don't.
-• The Knockout bracket page got a big glow-up: the full tournament tree with real team names, updating live as games finish. Go have a peek! 🌐
+Buongiorno, famiglia! The knockouts are HERE and one mistake now sends a team home. Here's where we stand. 👇
 
-📋 First knockout result:
-• 🇨🇦 Canada 1–0 🇿🇦 South Africa — Canada win the very first Round of 32 game and march on!
+🏆 YESTERDAY (Round of 32)
+🇿🇦 South Africa 0–1 Canada 🇨🇦 — Canada sneak through to the next round!
 
-🏆 Leaderboard — Top 5
-1. Nonno — 184
-2. Ewan — 179
-3. Nana — 162
-4. River — 161
-5. Boompa — 130
-🔥 Most exact scores: Ewan with 9!
-👑 Champions still alive: every single one — Belgium, Spain, England, France, Argentina & USA all still standing.
+Anyone who tipped Canada to advance banked 5 points: nice work Ewan, Nana, Nonna and Autumn. 👏 No exact scores this time — that one stayed tight.
 
-🎯 Today's games (Round of 32) — get your picks in before kickoff!
-• 🇩🇪 Germany v Paraguay 🇵🇾
-• 🇳🇱 Netherlands v Morocco 🇲🇦
-• 🇧🇷 Brazil v Japan 🇯🇵
+📊 STANDINGS
+🥇 Nonno — 184 ▬
+🥈 Ewan — 179 ▬
+🥉 Nana — 162 ▬
+4️⃣ River — 161 ▬
+5️⃣ Boompa — 130 ▬
+6️⃣ Nonna — 105 ▲
+7️⃣ Autumn — 102 ▼
+8️⃣ Xavier — 53 ▬
+9️⃣ Emrys — 29 ▬
 
-Tap "Make Your Picks," and remember: if you predict a draw, choose who goes through on penalties. Kickoff times (in your local time) are in the app. Good luck! 🍀
+Nonna edges past Autumn for 6th — the only move on the board. 🎯 Exact-score king is still Ewan with NINE perfect calls.
 
-👉 https://family-worldcup-2026.pages.dev
+📅 TODAY'S GAMES (3 knockout clashes!)
+🇩🇪 Germany vs Paraguay 🇵🇾 — 12:00 PM
+🇳🇱 Netherlands vs Morocco 🇲🇦 — 3:30 PM
+🇧🇷 Brazil vs Japan 🇯🇵 — 8:00 PM
+(all times Central)
+
+Two big podium picks in action today — Netherlands and Brazil. Pick the score at 90 minutes; extra time and penalties don't count!
+
+✍️ STILL NEED TO PICK
+Ewan, Nonna, Xavier and Autumn — you're not in for any of today's three yet.
+Boompa — you've got Germany covered, still need Netherlands and Brazil.
+Get them in before kickoff! 👉 https://family-worldcup-2026.pages.dev
+
+Buona fortuna a tutti! ⚽🏆
