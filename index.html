@@ -913,7 +913,7 @@ function provPts(ph,pa,ah,aa,n){ if(ph==null||pa==null||ah==null||aa==null) retu
 
 function pocardHtml(m){
   let mh=m.h, ma=m.a;
-  if(isKnk(m)){ const t=koResolveTeams(m.n,koContext()); if(isTeam(t.h)) mh=t.h; if(isTeam(t.a)) ma=t.a; }
+  if(isKnk(m)){ try{ const t=koResolveTeams(m.n,koContext()); if(isTeam(t.h)) mh=t.h; if(isTeam(t.a)) ma=t.a; }catch(e){} }
   const done=m.ah!=null;
   const lv=LIVE[m.n];
   const hasLive = !done && lv && (lv.state==='in'||lv.state==='post') && lv.h!=null && !isNaN(lv.h);
@@ -1025,10 +1025,10 @@ function renderChips(){
 function isKnk(m){ return m.stage && m.stage.indexOf('Group')<0; }
 function renderMatches(){
   const items=DATA.matches.filter(m=>m.date===mf);
-  const kctx=koContext();   // resolve knockout slots -> real teams as they're known
+  let kctx=null; try{ kctx=koContext(); }catch(e){}   // resolve knockout slots -> real teams as they're known
   document.getElementById('matchList').innerHTML=items.map(m=>{
     let mh=m.h, ma=m.a;
-    if(isKnk(m)){ const t=koResolveTeams(m.n,kctx); if(isTeam(t.h)) mh=t.h; if(isTeam(t.a)) ma=t.a; }
+    if(isKnk(m)&&kctx){ try{ const t=koResolveTeams(m.n,kctx); if(isTeam(t.h)) mh=t.h; if(isTeam(t.a)) ma=t.a; }catch(e){} }
     const done=m.ah!=null;
     const lv=LIVE[m.n];
     const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
