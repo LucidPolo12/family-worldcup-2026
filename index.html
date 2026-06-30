@@ -535,7 +535,7 @@ function syncStandingsFromResults(){
     let mp=0,ex=0,co=0;
     (p.picks||[]).forEach(function(pk){
       if(R[pk.n] && pk.ph!=null && pk.pa!=null){
-        const pts=provPts(pk.ph,pk.pa,R[pk.n][0],R[pk.n][1],pk.n);
+        const pts=pkPts(pk,R[pk.n][0],R[pk.n][1],pk.n);
         pk.pts=pts; mp+=pts; if(isExactPick(pk.ph,pk.pa,R[pk.n][0],R[pk.n][1])) ex++; if(pts>0) co++;
       } else { pk.pts=null; }
     });
@@ -910,6 +910,19 @@ function isExactPick(ph,pa,ah,aa){ return ph!=null&&pa!=null&&ah!=null&&aa!=null
 function provPts(ph,pa,ah,aa,n){ if(ph==null||pa==null||ah==null||aa==null) return 0;
   const {correct,exact}=stagePtsFor(n||1);
   if(ph===ah&&pa===aa) return exact; const s=(x,y)=>(x>y)-(x<y); return s(ph,pa)===s(ah,aa)?correct:0; }
+// Which side actually advances: official call from data.json if present, else the
+// higher regulation score (a tie with no recorded penalty winner stays unknown).
+function advActual(n,ah,aa){ const a=(DATA.advancing||{})[n]; if(a==='H'||a==='A') return a; if(ah>aa) return 'H'; if(aa>ah) return 'A'; return null; }
+// Which side a pick backs to go through: their explicit shootout pick (pk.adv) on a
+// tied prediction, otherwise the higher predicted score.
+function advPred(pk){ if(pk.adv==='H'||pk.adv==='A') return pk.adv; if(pk.ph>pk.pa) return 'H'; if(pk.pa>pk.ph) return 'A'; return null; }
+// Stage-correct points for one pick. Group stage: 3 outcome / 8 exact (exact replaces).
+// Knockout: advance points (right team through, penalties included) PLUS an exact-score
+// bonus — the two stack, matching regenerate_data.py.
+function pkPts(pk,ah,aa,n){ if(pk.ph==null||pk.pa==null||ah==null||aa==null) return 0; n=(n!=null?n:pk.n); const sp=stagePtsFor(n);
+  if(matchStage(n)==='Group Stage'){ if(pk.ph===ah&&pk.pa===aa) return sp.exact; const s=(x,y)=>(x>y)-(x<y); return s(pk.ph,pk.pa)===s(ah,aa)?sp.correct:0; }
+  let t=0; const ps=advPred(pk), as=advActual(n,ah,aa); const advV=(sp.advance!=null?sp.advance:sp.correct), bonV=(sp.bonus!=null?sp.bonus:0);
+  if(ps&&as&&ps===as) t+=advV; if(pk.ph===ah&&pk.pa===aa) t+=bonV; return t; }
 
 function pocardHtml(m){
   let mh=m.h, ma=m.a;
@@ -927,7 +940,7 @@ function pocardHtml(m){
   const knk=isKnk(m);
   let picks=DATA.standings.map(function(p){const pk=p.picks.find(function(k){return k.n===m.n;}); return pk?{name:p.name,ph:pk.ph,pa:pk.pa,pts:pk.pts,adv:pk.adv}:null;}).filter(Boolean);
   const sp=stagePtsFor(m.n);
-  const ptOf = function(p){ return done ? (p.pts||0) : (scored ? provPts(p.ph,p.pa,sh,sa,m.n) : -1); };
+  const ptOf = function(p){ return done ? (p.pts||0) : (scored ? pkPts(p,sh,sa,m.n) : -1); };
   if(scored) picks.sort(function(a,b){ return (ptOf(b)-ptOf(a))||a.name.localeCompare(b.name); });
   else picks.sort(function(a,b){ return a.name.localeCompare(b.name); });
   const rows = picks.length ? picks.map(function(p){
