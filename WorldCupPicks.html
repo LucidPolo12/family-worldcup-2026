@@ -176,6 +176,7 @@ function renderChips(){
 
 /* ===== Live knockout resolution — fills real team names from group results (mirrors the portal). ===== */
 let RES = {};                                   // {n:[h,a]} loaded from data.json
+let ADV = {};                                   // {n:"H"|"A"} manual advancing override loaded from data.json (level-after-fulltime matches)
 const GRP_FIX = FIX.filter(f=>f.stage==='Group Stage' && f.grp);
 const KTEAMSET = new Set(GRP_FIX.flatMap(f=>[f.h,f.a]));
 function isTeam(name){ return KTEAMSET.has(name); }
@@ -306,8 +307,16 @@ function koOutcome(n, ctx){
   ctx.oCache[n]={winner:null,loser:null};
   const t=koResolveTeams(n,ctx), r=ctx.R[n];
   let out={winner:null,loser:null};
-  if(t && isTeam(t.h) && isTeam(t.a) && r && r[0]!==r[1]){
-    out = r[0]>r[1] ? {winner:t.h,loser:t.a} : {winner:t.a,loser:t.h};
+  if(t && isTeam(t.h) && isTeam(t.a) && r){
+    if(r[0]!==r[1]){
+      out = r[0]>r[1] ? {winner:t.h,loser:t.a} : {winner:t.a,loser:t.h};
+    } else {
+      // Level after all playing time -> penalties. Use the recorded advancing
+      // side (ADV, from data.json) so the bracket flows on past a shootout.
+      const side=ADV[n];
+      if(side==='H') out={winner:t.h,loser:t.a};
+      else if(side==='A') out={winner:t.a,loser:t.h};
+    }
   }
   ctx.oCache[n]=out; return out;
 }
@@ -321,6 +330,7 @@ function disp(f){
 function loadResults(){
   return fetch('data.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
     RES={}; const rr=(d&&d.results)||{}; Object.keys(rr).forEach(function(k){ RES[+k]=rr[k]; });
+    ADV={}; const aa=(d&&d.advancing)||{}; Object.keys(aa).forEach(function(k){ ADV[+k]=aa[k]; });
     __koctx=null; renderList();
   }).catch(function(){});
 }
