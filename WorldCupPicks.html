@@ -483,7 +483,9 @@ document.getElementById("clearBtn").onclick=()=>{
 
 // ===== Champion & Podium tab =====
 // 48 tournament teams, pulled straight from the group-stage fixtures.
-const TEAMS = [...new Set(FIX.filter(f=>f.stage==="Group Stage").flatMap(f=>[f.h,f.a]))].sort((a,b)=>a.localeCompare(b));
+// Teams eliminated in Round of 32 (as of beginning of 7/2/26 — matches 73-82 decided) are removed from picks.
+const ELIMINATED_TEAMS = new Set(["South Africa","Germany","Netherlands","Japan","Sweden","Ivory Coast","Ecuador","DR Congo","Bosnia and Herzegovina","Senegal"]);
+const TEAMS = [...new Set(FIX.filter(f=>f.stage==="Group Stage").flatMap(f=>[f.h,f.a]))].filter(t=>!ELIMINATED_TEAMS.has(t)).sort((a,b)=>a.localeCompare(b));
 if(!state.final4) state.final4 = {champ:"",run:"",third:"",fourth:""};
 // Deadlines. All four picks are editable now and lock at the first Quarterfinal kickoff.
 const PODIUM_OPEN = new Date("2026-06-11T00:00:00-05:00"); // open from the start of the tournament
@@ -551,35 +553,36 @@ function submitPodium(){
 }
 
 // ===== Golden Boot tab =====
-// Players with 2+ goals as of Jun 28 2026 (post group stage + R32 match 73).
-// Players from eliminated teams removed. Update counts as the tournament progresses.
+// Players with 2+ goals as of end of play 7/1/26 (through R32 matches 73-82).
+// Players from teams eliminated as of 7/2/26 with 4 or fewer total goals removed
+// (eliminated-team players with 5+ goals are kept). Update counts as the tournament progresses.
 const GB_PLAYERS = [
+  {name:"Kylian Mbappé",         country:"FRA", goals:6},
   {name:"Lionel Messi",          country:"ARG", goals:6},
+  {name:"Erling Haaland",        country:"NOR", goals:5},
+  {name:"Harry Kane",            country:"ENG", goals:5},
   {name:"Ousmane Dembélé",       country:"FRA", goals:4},
-  {name:"Erling Haaland",        country:"NOR", goals:4},
-  {name:"Kylian Mbappé",         country:"FRA", goals:4},
   {name:"Vinicius Jr",           country:"BRA", goals:4},
-  {name:"Brian Brobbey",         country:"NED", goals:3},
-  {name:"Deniz Undav",           country:"GER", goals:3},
-  {name:"Harry Kane",            country:"ENG", goals:3},
-  {name:"Ismael Saibari",        country:"MAR", goals:3},
-  {name:"Ismaila Sarr",          country:"SEN", goals:3},
-  {name:"Johan Manzambi",        country:"SUI", goals:3},
-  {name:"Jonathan David",        country:"CAN", goals:3},
+  {name:"Folarin Balogun",       country:"USA", goals:3},
   {name:"Matheus Cunha",         country:"BRA", goals:3},
-  {name:"Ayase Ueda",            country:"JPN", goals:2},
-  {name:"Cody Gakpo",            country:"NED", goals:2},
-  {name:"Cristiano Ronaldo",     country:"POR", goals:2},
-  {name:"Crysencio Summerville", country:"NED", goals:2},
+  {name:"Jonathan David",        country:"CAN", goals:3},
+  {name:"Elijah Just",           country:"NZL", goals:3},
+  {name:"Johan Manzambi",        country:"SUI", goals:3},
+  {name:"Julian Quiñones",       country:"MEX", goals:3},
+  {name:"Ismael Saibari",        country:"MAR", goals:3},
+  {name:"Maxi Araujo",           country:"URU", goals:2},
+  {name:"Marko Arnautovic",      country:"AUT", goals:2},
+  {name:"Bradley Barcola",       country:"FRA", goals:2},
+  {name:"Jude Bellingham",       country:"ENG", goals:2},
+  {name:"Raul Jimenez",          country:"MEX", goals:2},
   {name:"Cyle Larin",            country:"CAN", goals:2},
-  {name:"Daichi Kamada",         country:"JPN", goals:2},
-  {name:"Daniel Muñoz",          country:"COL", goals:2},
-  {name:"Folarin Balogun",       country:"USA", goals:2},
-  {name:"Julian Quiñones",       country:"MEX", goals:2},
-  {name:"Kai Havertz",           country:"GER", goals:2},
+  {name:"Romelu Lukaku",         country:"BEL", goals:2},
+  {name:"Riyad Mahrez",          country:"ALG", goals:2},
   {name:"Mikel Oyarzabal",       country:"ESP", goals:2},
-  {name:"Nicolas Pepe",          country:"CIV", goals:2},
-  {name:"Yasin Ayari",           country:"SWE", goals:2},
+  {name:"Cristiano Ronaldo",     country:"POR", goals:2},
+  {name:"Youri Tielemans",       country:"BEL", goals:2},
+  {name:"Leandro Trossard",      country:"BEL", goals:2},
+  {name:"Ruben Vargas",          country:"SUI", goals:2},
 ];
 if(!state.goldenBoot) state.goldenBoot = {pick1:"", pick2:"", pick3:""};
 const GB_LOCK = new Date("2026-07-09T20:00:00Z"); // first QF kickoff: Thu Jul 9 4:00 PM ET
