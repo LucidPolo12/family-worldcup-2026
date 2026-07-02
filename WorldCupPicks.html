@@ -483,8 +483,16 @@ document.getElementById("clearBtn").onclick=()=>{
 
 // ===== Champion & Podium tab =====
 // 48 tournament teams, pulled straight from the group-stage fixtures.
-// Teams eliminated in Round of 32 (as of beginning of 7/2/26 — matches 73-82 decided) are removed from picks.
-const ELIMINATED_TEAMS = new Set(["South Africa","Germany","Netherlands","Japan","Sweden","Ivory Coast","Ecuador","DR Congo","Bosnia and Herzegovina","Senegal"]);
+// Teams eliminated as of beginning of 7/2/26 are removed from picks:
+// (a) the 16 teams that did not advance out of the group stage at all, plus
+// (b) the 10 more knocked out in Round of 32 so far (matches 73-82 decided).
+const ELIMINATED_TEAMS = new Set([
+  // group-stage eliminations (did not reach Round of 32)
+  "South Korea","Czechia","Qatar","Haiti","Scotland","Türkiye","Curaçao","Tunisia",
+  "New Zealand","Iran","Saudi Arabia","Uruguay","Iraq","Jordan","Uzbekistan","Panama",
+  // Round of 32 eliminations (matches 73-82)
+  "South Africa","Germany","Netherlands","Japan","Sweden","Ivory Coast","Ecuador","DR Congo","Bosnia and Herzegovina","Senegal"
+]);
 const TEAMS = [...new Set(FIX.filter(f=>f.stage==="Group Stage").flatMap(f=>[f.h,f.a]))].filter(t=>!ELIMINATED_TEAMS.has(t)).sort((a,b)=>a.localeCompare(b));
 if(!state.final4) state.final4 = {champ:"",run:"",third:"",fourth:""};
 // Deadlines. All four picks are editable now and lock at the first Quarterfinal kickoff.
@@ -554,7 +562,8 @@ function submitPodium(){
 
 // ===== Golden Boot tab =====
 // Players with 2+ goals as of end of play 7/1/26 (through R32 matches 73-82).
-// Players from teams eliminated as of 7/2/26 with 4 or fewer total goals removed
+// Players from teams already eliminated as of 7/2/26 (either out in the group stage,
+// or knocked out in Round of 32 so far) with 4 or fewer total goals are removed
 // (eliminated-team players with 5+ goals are kept). Update counts as the tournament progresses.
 const GB_PLAYERS = [
   {name:"Kylian Mbappé",         country:"FRA", goals:6},
@@ -566,11 +575,9 @@ const GB_PLAYERS = [
   {name:"Folarin Balogun",       country:"USA", goals:3},
   {name:"Matheus Cunha",         country:"BRA", goals:3},
   {name:"Jonathan David",        country:"CAN", goals:3},
-  {name:"Elijah Just",           country:"NZL", goals:3},
   {name:"Johan Manzambi",        country:"SUI", goals:3},
   {name:"Julian Quiñones",       country:"MEX", goals:3},
   {name:"Ismael Saibari",        country:"MAR", goals:3},
-  {name:"Maxi Araujo",           country:"URU", goals:2},
   {name:"Marko Arnautovic",      country:"AUT", goals:2},
   {name:"Bradley Barcola",       country:"FRA", goals:2},
   {name:"Jude Bellingham",       country:"ENG", goals:2},
