@@ -12,6 +12,7 @@ __pycache__/
 # Local scratch (not part of the site)
 *.tmp
 ~$*.xlsx
+.~lock.*#
 
 # Secrets — never publish
 odds_key.txt
