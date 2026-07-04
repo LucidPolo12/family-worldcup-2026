@@ -514,7 +514,8 @@ function tickCountdown(){
   document.getElementById('cdd').textContent=d;
   document.getElementById('cdh').textContent=h;
   document.getElementById('cdm').textContent=mn;
-  document.getElementById('cdnext').innerHTML = "⏱️ Next up: <b>"+flag(m.h)+" "+m.h+" vs "+m.a+" "+flag(m.a)+"</b>"+(KO[m.n]?" · "+koLocal(m.n,m.date):"");
+  const _d=koDisp(m);
+  document.getElementById('cdnext').innerHTML = "⏱️ Next up: <b>"+flag(_d.h)+" "+_d.h+" vs "+_d.a+" "+flag(_d.a)+"</b>"+(KO[m.n]?" · "+koLocal(m.n,m.date):"");
 }
 tickCountdown(); setInterval(tickCountdown,30000);
 
@@ -612,7 +613,9 @@ function renderToday(){
   todaySec.style.display='';
   document.getElementById('todayLead').textContent =
     fmtD(today)+' — '+games.length+' game'+(games.length>1?'s':'')+' on the slate. Get your picks in before kickoff!';
+  const _kctx=(function(){try{return koContext();}catch(e){return null;}})();
   document.getElementById('todayList').innerHTML = games.map(m=>{
+    const _d=koDisp(m,_kctx);
     const done=m.ah!=null;
     const lv=LIVE[m.n];
     const hasLive = !done && lv && lv.h!=null && !isNaN(lv.h) && (lv.state==='in'||lv.state==='post');
@@ -622,9 +625,9 @@ function renderToday(){
     const statusR = done ? 'Full time'
       : hasLive ? (lv.state==='post' ? '✅ Full time' : '🔴 LIVE'+(lv.clock?(' '+lv.clock):''))
       : (koLocal(m.n,m.date)||'Today');
-    return '<div class="match"><div class="tm">'+flag(m.h)+' '+m.h+'</div>'+
+    return '<div class="match"><div class="tm">'+flag(_d.h)+' '+_d.h+'</div>'+
       '<div class="sc">'+scoreCell+'</div>'+
-      '<div class="tm a">'+m.a+' '+flag(m.a)+'</div>'+
+      '<div class="tm a">'+_d.a+' '+flag(_d.a)+'</div>'+
       '<div class="mt"><span>Match '+m.n+' · '+(m.grp?('Group '+m.grp):m.stage)+'</span><span>'+statusR+'</span></div>'+((!done&&!hasLive)?renderProbBar(m):'')+'</div>';
   }).join('');
   const nums = games.map(g=>g.n);
@@ -1007,8 +1010,9 @@ function openPlayer(name){
   const rows = x.picks.length? x.picks.slice().sort(function(a,b){ var ma=mByN(a.n), mb=mByN(b.n); return (ma?matchStart(ma):0)-(mb?matchStart(mb):0) || a.n-b.n; }).map(pk=>{ // chronological by kickoff
     const m=mByN(pk.n);
     const res = m && m.ah!=null ? m.ah+'–'+m.aa : 'TBD';
+    const _d=koDisp(m);
     const _sp=stagePtsFor(pk.n); const pz = pk.pts==null? '—' : (pk.pts===_sp.exact?'🔥 '+_sp.exact:(pk.pts===_sp.correct?'✅ '+_sp.correct:'0'));
-    return '<div class="prow"><span class="pp">'+flag(m.h)+' '+m.h+' '+pk.ph+'–'+pk.pa+' '+m.a+' '+flag(m.a)+'</span><span class="pz">'+pz+'</span></div>'+
+    return '<div class="prow"><span class="pp">'+flag(_d.h)+' '+_d.h+' '+pk.ph+'–'+pk.pa+' '+_d.a+' '+flag(_d.a)+'</span><span class="pz">'+pz+'</span></div>'+
       '<div class="prow" style="border:none;padding-top:0;margin-top:-6px"><span class="sm" style="font-size:11px;color:var(--muted)">Match '+pk.n+' · actual: '+res+'</span><span></span></div>';
   }).join('') : '<p class="sm">No match predictions entered yet.</p>';
   const _ph=(DATA.photos||{})[name];
@@ -1041,6 +1045,14 @@ function renderChips(){
   if(on) cont.scrollLeft = on.offsetLeft - cont.clientWidth/2 + on.offsetWidth/2;
 }
 function isKnk(m){ return m.stage && m.stage.indexOf('Group')<0; }
+// Resolve a knockout match's display teams from the live bracket, falling back to
+// the stored fixture. This lets Next up / Today / Our Picks fill in QF/SF/Final
+// teams automatically as results land — no manual per-round fixture edits.
+function koDisp(m, ctx){
+  let h=m&&m.h, a=m&&m.a;
+  if(m&&isKnk(m)){ try{ const c=ctx||koContext(); const t=koResolveTeams(m.n,c); if(isTeam(t.h)) h=t.h; if(isTeam(t.a)) a=t.a; }catch(e){} }
+  return {h:h, a:a};
+}
 function renderMatches(){
   const items=DATA.matches.filter(m=>m.date===mf).sort(function(a,b){ return matchStart(a)-matchStart(b); }); // chronological by kickoff
   let kctx=null; try{ kctx=koContext(); }catch(e){}   // resolve knockout slots -> real teams as they're known

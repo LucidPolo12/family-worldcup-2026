@@ -334,6 +334,9 @@ function loadResults(){
     RES={}; const rr=(d&&d.results)||{}; Object.keys(rr).forEach(function(k){ RES[+k]=rr[k]; });
     ADV={}; const aa=(d&&d.advancing)||{}; Object.keys(aa).forEach(function(k){ ADV[+k]=aa[k]; });
     __koctx=null; renderList();
+    // Bracket-driven lists (podium eligibility, Golden Boot) depend on results —
+    // re-render the open tab now that data.json has loaded.
+    if(activeTab==="podium") renderPodium(); else if(activeTab==="goldenboot") renderGoldenBoot();
   }).catch(function(){});
 }
 
@@ -494,20 +497,25 @@ document.getElementById("clearBtn").onclick=()=>{
 };
 
 // ===== Champion & Podium tab =====
-// 48 tournament teams, pulled straight from the group-stage fixtures.
-// Teams eliminated as of the start of the Round of 16 (7/4/26) are removed from
-// picks — leaving exactly the 16 teams still alive:
-// (a) the 16 teams that did not advance out of the group stage at all, plus
-// (b) the 16 knocked out in the full Round of 32 (matches 73-88).
-const ELIMINATED_TEAMS = new Set([
-  // group-stage eliminations (did not reach Round of 32)
-  "South Korea","Czechia","Qatar","Haiti","Scotland","Türkiye","Curaçao","Tunisia",
-  "New Zealand","Iran","Saudi Arabia","Uruguay","Iraq","Jordan","Uzbekistan","Panama",
-  // Round of 32 eliminations (matches 73-88)
-  "South Africa","Germany","Netherlands","Japan","Sweden","Ivory Coast","Ecuador","DR Congo","Bosnia and Herzegovina","Senegal",
-  "Croatia","Austria","Algeria","Cape Verde","Ghana","Australia"
-]);
-const TEAMS = [...new Set(FIX.filter(f=>f.stage==="Group Stage").flatMap(f=>[f.h,f.a]))].filter(t=>!ELIMINATED_TEAMS.has(t)).sort((a,b)=>a.localeCompare(b));
+// The eligible-team list is computed LIVE from the bracket every time this tab
+// renders, so it prunes itself each round with zero manual edits. A team is out if:
+//  (a) it never reached the Round of 32 (not present in any R32 fixture), or
+//  (b) it lost a knockout match (resolved through the whole bracket, penalties
+//      included via the recorded advancing side).
+const ALL_GROUP_TEAMS = [...new Set(FIX.filter(f=>f.stage==="Group Stage").flatMap(f=>[f.h,f.a]))];
+function eliminatedTeams(){
+  const r32Teams = new Set(FIX.filter(f=>f.stage==="Round of 32").flatMap(f=>[f.h,f.a]).filter(isTeam));
+  const elim = new Set(ALL_GROUP_TEAMS.filter(t=>!r32Teams.has(t)));   // (a) group-stage exits
+  try{
+    const ctx=koContext();
+    FIX.filter(isKnock).forEach(function(f){ const oc=koOutcome(f.n,ctx); if(oc.loser && isTeam(oc.loser)) elim.add(oc.loser); });  // (b) knockout losers
+  }catch(e){}
+  return elim;
+}
+function currentTeams(){
+  const elim=eliminatedTeams();
+  return ALL_GROUP_TEAMS.filter(t=>!elim.has(t)).sort((a,b)=>a.localeCompare(b));
+}
 if(!state.final4) state.final4 = {champ:"",run:"",third:"",fourth:""};
 // Deadlines. All four picks are editable now and lock at the first Quarterfinal kickoff.
 const PODIUM_OPEN = new Date("2026-06-11T00:00:00-05:00"); // open from the start of the tournament
@@ -519,7 +527,9 @@ function podiumPhase(){ const now=Date.now(); if(now>=PODIUM_LOCK.getTime()) ret
 const panelPodium = document.getElementById("panelPodium");
 function teamOptions(selected, exclude){
   let h='<option value="">— pick a team —</option>';
-  TEAMS.forEach(t=>{ if(exclude.has(t) && t!==selected) return; h+='<option'+(t===selected?' selected':'')+'>'+t+'</option>'; });
+  const opts = currentTeams();
+  if(selected && opts.indexOf(selected)<0) opts.push(selected); // keep an already-picked team visible even if just eliminated
+  opts.forEach(t=>{ if(exclude.has(t) && t!==selected) return; h+='<option'+(t===selected?' selected':'')+'>'+t+'</option>'; });
   return h;
 }
 function podRow(key,label,medal,disabled,note){
@@ -575,10 +585,10 @@ function submitPodium(){
 }
 
 // ===== Golden Boot tab =====
-// Players with 2+ goals whose teams are still alive in the Round of 16 (7/4/26).
-// Anyone from a team eliminated in the group stage or the Round of 32 (matches
-// 73-88) is removed, since the Golden Boot picks should only list players who
-// can still add to their tally. Update counts as the tournament progresses.
+// Master list of 2+ goal scorers. The dropdown auto-hides anyone whose team has
+// been eliminated (via eliminatedTeams(), same bracket logic as the podium), so
+// the list prunes itself each round. When you want to reflect NEW goals scored,
+// just edit the goals numbers / add a scorer here — eliminations are automatic.
 const GB_PLAYERS = [
   {name:"Kylian Mbappé",         country:"FRA", goals:6},
   {name:"Lionel Messi",          country:"ARG", goals:6},
@@ -603,6 +613,20 @@ const GB_PLAYERS = [
   {name:"Leandro Trossard",      country:"BEL", goals:2},
   {name:"Ruben Vargas",          country:"SUI", goals:2},
 ];
+// FIFA 3-letter code -> team name (as spelled in the fixtures), so a player's
+// team can be checked against eliminatedTeams(). Unknown codes are kept visible.
+const GB_CODE2TEAM = {FRA:"France",ARG:"Argentina",NOR:"Norway",ENG:"England",BRA:"Brazil",
+  USA:"USA",CAN:"Canada",SUI:"Switzerland",MEX:"Mexico",MAR:"Morocco",BEL:"Belgium",
+  ESP:"Spain",POR:"Portugal",PAR:"Paraguay",EGY:"Egypt",COL:"Colombia",AUT:"Austria",
+  ALG:"Algeria",GER:"Germany",NED:"Netherlands",CRO:"Croatia",URU:"Uruguay",SEN:"Senegal",
+  JPN:"Japan",GHA:"Ghana",AUS:"Australia",CPV:"Cape Verde",ECU:"Ecuador",CIV:"Ivory Coast",
+  SWE:"Sweden",KSA:"Saudi Arabia",RSA:"South Africa"};
+// Players still eligible = team not eliminated (or already one of your picks).
+function gbEligible(){
+  const elim=eliminatedTeams();
+  const gb=state.goldenBoot||{}; const sel=new Set([gb.pick1,gb.pick2,gb.pick3].filter(Boolean));
+  return GB_PLAYERS.filter(function(p){ const tm=GB_CODE2TEAM[p.country]; return sel.has(p.name) || !tm || !elim.has(tm); });
+}
 if(!state.goldenBoot) state.goldenBoot = {pick1:"", pick2:"", pick3:""};
 const GB_LOCK = new Date("2026-07-09T20:00:00Z"); // first QF kickoff: Thu Jul 9 4:00 PM ET
 const GB_LOCK_LABEL = "Thu, Jul 9 · 4:00 PM ET (Quarterfinal kickoff)";
@@ -623,7 +647,7 @@ function renderGoldenBoot(){
   [['pick1','🥇 Pick 1 — Golden Boot winner'],['pick2','🥈 Pick 2 — 2nd top scorer'],['pick3','🥉 Pick 3 — 3rd top scorer']].forEach(function(pair){
     const key=pair[0], label=pair[1];
     let opts = '<option value="">— choose a player —</option>';
-    GB_PLAYERS.forEach(function(p){
+    gbEligible().forEach(function(p){
       opts += '<option value="'+p.name+'"'+(p.name===gb[key]?' selected':'')+'>'+p.name+' ('+p.country+') — '+p.goals+'⚽</option>';
     });
     html += '<div class="pcard' + (locked?' lockedrow':'') + '">'
@@ -662,7 +686,9 @@ function submitGoldenBoot(){
 
 // ===== Tab switching =====
 const panelMatches=document.getElementById("panelMatches"), barEl=document.querySelector(".bar");
+let activeTab="matches";
 function setTab(t){
+  activeTab=t;
   const m=(t==="matches"), p=(t==="podium"), g=(t==="goldenboot");
   document.getElementById("tabMatches").classList.toggle("active",m);
   document.getElementById("tabPodium").classList.toggle("active",p);
