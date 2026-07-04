@@ -704,13 +704,64 @@ document.getElementById("tabMatches").onclick=()=>setTab("matches");
 document.getElementById("tabPodium").onclick=()=>setTab("podium");
 document.getElementById("tabGoldenBoot").onclick=()=>setTab("goldenboot");
 
+// ---- Live scores straight from ESPN, so the bracket-driven lists (Champion &
+//      Podium eligibility, Golden Boot) update within a poll of a game finishing,
+//      not on the daily pipeline. Only settled ('post') games are merged, and we
+//      never override an official result already in data.json. ----
+var LIVE_ALIAS={"United States":"USA","Korea Republic":"South Korea","Turkey":"Türkiye",
+  "Czech Republic":"Czechia","Côte d'Ivoire":"Ivory Coast","IR Iran":"Iran",
+  "Bosnia & Herzegovina":"Bosnia and Herzegovina","Cabo Verde":"Cape Verde","Congo DR":"DR Congo"};
+function lstrip(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+var LIVE_ALIAS_C={}; Object.keys(LIVE_ALIAS).forEach(function(k){ LIVE_ALIAS_C[lstrip(k)]=lstrip(LIVE_ALIAS[k]); });
+function lcanon(s){ var st=lstrip(s); return LIVE_ALIAS_C[st]||st; }
+function livePairIndex(){
+  var idx={}, ctx=koContext();
+  FIX.forEach(function(f){
+    var h=f.h, a=f.a;
+    if(isKnock(f)){ try{ var t=koResolveTeams(f.n,ctx); if(isTeam(t.h)) h=t.h; if(isTeam(t.a)) a=t.a; }catch(e){} }
+    if(!isTeam(h)||!isTeam(a)) return;
+    idx[lcanon(h)+'|'+lcanon(a)]={n:f.n,rev:false};
+    idx[lcanon(a)+'|'+lcanon(h)]={n:f.n,rev:true};
+  });
+  return idx;
+}
+function lymd(t){ var d=new Date(t); return ''+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'); }
+function fetchLiveKO(){
+  var idx=livePairIndex();
+  var root='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+  var now=Date.now(), urls=[-1,0,1].map(function(o){ return root+'?dates='+lymd(now+o*86400000); });
+  return Promise.all(urls.map(function(u){ return fetch(u,{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }); }))
+  .then(function(res){
+    var changed=false;
+    res.forEach(function(d){ if(!d||!d.events) return; d.events.forEach(function(ev){ try{
+      var st=(ev.status&&ev.status.type)?ev.status.type.state:'';
+      if(st!=='post') return;                       // only fully-finished games
+      var cs=ev.competitions[0].competitors;
+      var H=cs.find(function(c){return c.homeAway==='home';}), A=cs.find(function(c){return c.homeAway==='away';});
+      var hit=idx[lcanon(H.team.displayName)+'|'+lcanon(A.team.displayName)];
+      if(!hit) return;
+      var hs=parseInt(H.score,10), as=parseInt(A.score,10);
+      if(isNaN(hs)||isNaN(as)) return;
+      if(hit.rev){ var tmp=hs; hs=as; as=tmp; }
+      var adv=null;
+      if(H.winner===true) adv='H'; else if(A.winner===true) adv='A';
+      else if(H.shootoutScore!=null&&A.shootoutScore!=null){ var hp=parseInt(H.shootoutScore,10),ap=parseInt(A.shootoutScore,10); if(hp>ap)adv='H'; else if(ap>hp)adv='A'; }
+      if(hit.rev&&adv) adv=(adv==='H'?'A':'H');
+      if(!(hit.n in RES)){ RES[hit.n]=[hs,as]; changed=true; }
+      if(adv && ADV[hit.n]!==adv){ ADV[hit.n]=adv; changed=true; }
+    }catch(e){} }); });
+    if(changed){ __koctx=null; renderList();
+      if(activeTab==="podium") renderPodium(); else if(activeTab==="goldenboot") renderGoldenBoot(); }
+  }).catch(function(){});
+}
+
 renderChips(); renderList(); setTab("matches");
-loadResults();
-// Re-render every 30s so games lock automatically the moment they kick off,
-// and so the podium tab flips open/locked at its deadlines without a refresh.
+loadResults().then(fetchLiveKO);
+// Re-render every 30s so games lock automatically the moment they kick off, the
+// podium tab flips open/locked at its deadlines, and live results roll straight in.
 let lastPhase=podiumPhase();
 setInterval(function(){
-  loadResults();
+  loadResults().then(fetchLiveKO);
   const p=podiumPhase();
   if(p!==lastPhase){ lastPhase=p; if(panelPodium.style.display!=="none") renderPodium(); }
 }, 30000);

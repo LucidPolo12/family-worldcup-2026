@@ -24,7 +24,7 @@ Safety rules:
 Key: env ODDS_API_KEY (GitHub Actions secret) or local odds_key.txt.
 CI order:  update_scores.py -> regenerate_data.py -> fetch_odds.py -> commit/push.
 """
-import json, os, re, urllib.request, openpyxl
+import json, os, re, urllib.request, unicodedata, openpyxl
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 XLSX = os.path.join(HERE, "FamilyWorldCup2026.xlsx")
@@ -96,6 +96,72 @@ def match_index(store):
             idx[(t[0], t[1])] = n
     return idx
 
+# ---- ESPN shootout resolution -----------------------------------------------
+# The Odds API can't say who won a penalty shootout, so for a knockout game that
+# ends LEVEL we ask ESPN's free scoreboard which side went through (each competitor
+# carries winner:true, and shootoutScore for the shootout tally). This fills the
+# advancing side automatically — the last piece that used to be manual.
+ESPN_ROOT = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
+ESPN_ALIAS = {"United States":"USA","Korea Republic":"South Korea","Turkey":"Türkiye",
+    "Czech Republic":"Czechia","Côte d'Ivoire":"Ivory Coast","IR Iran":"Iran",
+    "Bosnia & Herzegovina":"Bosnia and Herzegovina","Cabo Verde":"Cape Verde","Congo DR":"DR Congo"}
+def _strip(s):
+    s = unicodedata.normalize("NFD", s or "").encode("ascii","ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+_ALIAS_C = {_strip(k): _strip(v) for k, v in ESPN_ALIAS.items()}
+def _canon(s):
+    st = _strip(s); return _ALIAS_C.get(st, st)
+
+def _espn_winner_side(H, A, home_canon):
+    """Return 'H'/'A' for the side ESPN says advanced, mapped to OUR home/away."""
+    win = None
+    for c in (H, A):
+        if c.get("winner") is True: win = c
+    if win is None:
+        try:
+            hs, as_ = int(H.get("shootoutScore")), int(A.get("shootoutScore"))
+            win = H if hs > as_ else (A if as_ > hs else None)
+        except (TypeError, ValueError):
+            win = None
+    if win is None: return None
+    return 'H' if _canon(win["team"]["displayName"]) == home_canon else 'A'
+
+def resolve_shootouts(store, idx):
+    """For LEVEL knockout games with no advancing side yet, set it from ESPN."""
+    need = [n for n in range(73, 105)
+            if str(n) in store and len(store[str(n)]) == 2 and store[str(n)][0] == store[str(n)][1]]
+    if not need:
+        return []
+    fix = json.loads(re.search(r"const FIX = (\[.*?\]);", open(WCP, encoding="utf-8").read(), re.S).group(1))
+    n2date = {f["n"]: f.get("date") for f in fix}
+    n2pair = {v: k for k, v in idx.items()}          # match number -> (home, away)
+    dates = sorted({n2date.get(n) for n in need if n2date.get(n)})
+    applied = []
+    for d in dates:
+        try:
+            payload = json.loads(urllib.request.urlopen(ESPN_ROOT + "?dates=" + d.replace("-", ""), timeout=30).read())
+        except Exception:
+            continue
+        for ev in payload.get("events", []):
+            try:
+                cs = ev["competitions"][0]["competitors"]
+                H = next(c for c in cs if c.get("homeAway") == "home")
+                A = next(c for c in cs if c.get("homeAway") == "away")
+                names = {_canon(H["team"]["displayName"]), _canon(A["team"]["displayName"])}
+            except Exception:
+                continue
+            for n in need:
+                if str(n) not in store or len(store[str(n)]) != 2:
+                    continue
+                pr = n2pair.get(n)
+                if not pr or names != {_canon(pr[0]), _canon(pr[1])}:
+                    continue
+                side = _espn_winner_side(H, A, _canon(pr[0]))
+                if side:
+                    store[str(n)] = [store[str(n)][0], store[str(n)][1], side]
+                    applied.append(f"M{n}: {pr[0] if side=='H' else pr[1]} advanced on penalties")
+    return applied
+
 def main():
     # what's already known: results.json plus any scores already typed in the spreadsheet
     store = {}
@@ -136,13 +202,23 @@ def main():
         note = " (LEVEL — set Advancing (H/A) by hand)" if (hs == as_ and n >= 73) else ""
         wrote.append(f"M{n}: {home} {hs}-{as_} {away}{note}")
 
-    if wrote:
+    # Fill in penalty-shootout advancing sides from ESPN for any level KO game.
+    try:
+        pens = resolve_shootouts(store, idx)
+    except Exception:
+        pens = []
+
+    if wrote or pens:
         json.dump(store, open(RES, "w", encoding="utf-8"), ensure_ascii=False, indent=0)
     print(f"Auto-recorded {len(wrote)} new result(s):")
     for w in wrote:
         print("  +", w)
     if not wrote:
         print("  (nothing new to score)")
+    if pens:
+        print(f"Resolved {len(pens)} shootout advancing side(s) via ESPN:")
+        for p in pens:
+            print("  +", p)
 
 if __name__ == "__main__":
     main()

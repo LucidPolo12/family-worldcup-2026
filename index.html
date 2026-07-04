@@ -894,11 +894,22 @@ function fetchLive(){
         const st=(ev.status&&ev.status.type)?ev.status.type.state:'';
         let hs=parseInt(H.score,10), as=parseInt(A.score,10);
         if(hit.rev){ const t=hs; hs=as; as=t; }
+        // Live advancing side for knockout games: ESPN flags the winner (incl.
+        // shootouts), or we compare the shootout tally. Flip if home/away swapped.
+        let adv=null;
+        try{
+          if(H.winner===true) adv='H'; else if(A.winner===true) adv='A';
+          else if(H.shootoutScore!=null && A.shootoutScore!=null){
+            const hp=parseInt(H.shootoutScore,10), ap=parseInt(A.shootoutScore,10);
+            if(hp>ap) adv='H'; else if(ap>hp) adv='A';
+          }
+          if(hit.rev && adv) adv=(adv==='H'?'A':'H');
+        }catch(e){}
         const cur=next[hit.n];
         if(cur && (rank[cur.state]||0) >= (rank[st]||0)) return;  // keep the most-advanced state if duplicated
-        next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||''};
+        next[hit.n]={h:hs, a:as, state:st, clock:(ev.status&&ev.status.displayClock)||'', adv:adv};
       }catch(e){} }); });
-      LIVE=next; preserveScroll(function(){ renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers(); renderGroups(); });
+      LIVE=next; preserveScroll(function(){ renderPickoff(); renderMatches(); renderToday(); renderLB(); renderBadges(); renderPlayers(); renderGroups(); try{renderBracket();}catch(e){} try{renderWinners();}catch(e){} });
     }).catch(()=>{});
 }
 function matchStage(n){
@@ -920,7 +931,7 @@ function provPts(ph,pa,ah,aa,n){ if(ph==null||pa==null||ah==null||aa==null) retu
   if(ph===ah&&pa===aa) return exact; const s=(x,y)=>(x>y)-(x<y); return s(ph,pa)===s(ah,aa)?correct:0; }
 // Which side actually advances: official call from data.json if present, else the
 // higher regulation score (a tie with no recorded penalty winner stays unknown).
-function advActual(n,ah,aa){ const a=(DATA.advancing||{})[n]; if(a==='H'||a==='A') return a; if(ah>aa) return 'H'; if(aa>ah) return 'A'; return null; }
+function advActual(n,ah,aa){ const lv=LIVE[n]; if(lv&&lv.state==='post'&&(lv.adv==='H'||lv.adv==='A')) return lv.adv; const a=(DATA.advancing||{})[n]; if(a==='H'||a==='A') return a; if(ah>aa) return 'H'; if(aa>ah) return 'A'; return null; }
 // Which side a pick backs to go through: their explicit shootout pick (pk.adv) on a
 // tied prediction, otherwise the higher predicted score.
 function advPred(pk){ if(pk.adv==='H'||pk.adv==='A') return pk.adv; if(pk.ph>pk.pa) return 'H'; if(pk.pa>pk.ph) return 'A'; return null; }
@@ -1195,10 +1206,19 @@ function bktSort(arr,stage){
   if(stage==='Round of 16') return arr.slice().sort(function(a,b){return R16_VIS.indexOf(a.n)-R16_VIS.indexOf(b.n);});
   return arr.slice().sort(function(a,b){return a.n-b.n;});
 }
+// Advancing sides, official (DATA.advancing) PLUS anything ESPN has already
+// settled live — a shootout winner from a Full-Time game shows up here within
+// one poll, so the bracket flows on without waiting for the data pipeline.
+function liveAdvancing(){
+  const a=Object.assign({}, DATA.advancing||{});
+  Object.keys(LIVE||{}).forEach(function(n){ const lv=LIVE[n];
+    if(lv && lv.state==='post' && (lv.adv==='H'||lv.adv==='A')) a[n]=lv.adv; });
+  return a;
+}
 function koContext(){
   const byN={}; DATA.matches.forEach(function(m){byN[m.n]=m;});
   const O=groupOutcomes();
-  return {R:liveResults(), O:O, TA:thirdPlaceAssignment(O), byN:byN, tCache:{}, oCache:{}};
+  return {R:liveResults(), O:O, TA:thirdPlaceAssignment(O), ADV:liveAdvancing(), byN:byN, tCache:{}, oCache:{}};
 }
 // Resolve both teams of a knockout match. R32 uses group positions; later rounds
 // chase their feeder matches' winners/losers (recursively, memoised).
@@ -1224,9 +1244,9 @@ function koOutcome(n, ctx){
     if(r[0]!==r[1]){
       out = r[0]>r[1] ? {winner:t.h,loser:t.a} : {winner:t.a,loser:t.h};
     } else {
-      // Level after all playing time -> penalties. Use the recorded advancing
-      // side (DATA.advancing) so the bracket flows on past a shootout.
-      const side=(DATA.advancing||{})[n];
+      // Level after all playing time -> penalties. Use the advancing side
+      // (official, or ESPN's live shootout result) so the bracket flows on.
+      const side=(ctx.ADV||DATA.advancing||{})[n];
       if(side==='H') out={winner:t.h,loser:t.a};
       else if(side==='A') out={winner:t.a,loser:t.h};
     }
