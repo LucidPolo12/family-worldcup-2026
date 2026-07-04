@@ -491,11 +491,16 @@ function renderProbBar(m){
 function matchStart(m){ const i=koInstant(m.date, KO[m.n]); return i ? i.getTime() : new Date(m.date+"T23:00:00Z").getTime(); }
 function nextMatch(){
   const now = Date.now();
-  // The next game that hasn't finished AND hasn't kicked off yet —
-  // so it auto-advances the moment the previous game starts.
-  for(const m of DATA.matches){ if(m.ah==null && matchStart(m)>now) return m; }
-  // fallback: any unfinished game, else the last one
-  for(const m of DATA.matches){ if(m.ah==null) return m; }
+  const soonest = list => list.reduce((a,b)=>matchStart(a)<=matchStart(b)?a:b);
+  // The next game that hasn't finished AND hasn't kicked off yet — chosen by the
+  // EARLIEST kickoff, since match numbers aren't always in chronological order
+  // (e.g. R16 M90 kicks off before M89), so it auto-advances the moment the
+  // previous game starts.
+  const upcoming = DATA.matches.filter(m=>m.ah==null && matchStart(m)>now);
+  if(upcoming.length) return soonest(upcoming);
+  // fallback: any unfinished game (earliest), else the last one
+  const unfinished = DATA.matches.filter(m=>m.ah==null);
+  if(unfinished.length) return soonest(unfinished);
   return DATA.matches[DATA.matches.length-1] || null;
 }
 function tickCountdown(){
