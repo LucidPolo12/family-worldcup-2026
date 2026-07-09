@@ -1780,7 +1780,7 @@ function preserveScroll(fn){
   window.scrollTo(0, y);
   requestAnimationFrame(function(){ window.scrollTo(0, y); });
 }
-function reRenderAll(){ preserveScroll(function(){ renderLB(); renderBadges(); renderPlayers(); renderFanCam(); renderToday(); renderGroups(); renderPickoff(); renderChips(); renderMatches(); renderBracket(); tickCountdown(); }); }
+function reRenderAll(){ preserveScroll(function(){ renderLB(); renderBadges(); renderGoldenBoot(); renderPlayers(); renderFanCam(); renderToday(); renderGroups(); renderPickoff(); renderChips(); renderMatches(); renderBracket(); tickCountdown(); }); }
 reRenderAll();
 /* Live data source: if data.json is present (when served over http), use it as the
    source of truth and re-render. Falls back silently to the baked-in data above
