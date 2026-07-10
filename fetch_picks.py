@@ -145,6 +145,19 @@ def main():
     for (name, field), (ts, player) in golden_boot.items():
         picks.setdefault(name, {}).setdefault("goldenBoot", {})[field] = player
 
+    # --- Admin override: on-time-by-executive-decision Golden Boot picks ---
+    # River submitted her Golden Boot picks on time (before the QF deadline) while
+    # unwell; Marco recorded them by hand, so the Sheet timestamp lands after
+    # GB_LOCK and the ingest above would drop them. Inject them here so every
+    # refresh keeps them. setdefault means a real (pre-lock) Sheet entry, if one
+    # ever exists, still wins.
+    MANUAL_GB = {
+        "River": {"pick1": "Harry Kane", "pick2": "Erling Haaland", "pick3": "Kylian Mbappé"},
+    }
+    for nm, gbp in MANUAL_GB.items():
+        for field, player in gbp.items():
+            picks.setdefault(nm, {}).setdefault("goldenBoot", {}).setdefault(field, player)
+
     json.dump(picks, open(OUT, "w", encoding="utf-8"), ensure_ascii=False)
     total = sum(len(v) - ("podium" in v) - ("goldenBoot" in v) for v in picks.values())
     pod_n = sum(1 for v in picks.values() if v.get("podium"))
