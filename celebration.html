@@ -186,6 +186,15 @@ const IMG = "https://family-worldcup-2026.pages.dev/";
 const FINAL = {h:"Spain", a:"Argentina"};
 const THIRD = {h:"France", a:"England"};
 
+// ============================================================================
+//  RESULTS_VERIFIED: keep false until you have checked EVERY point after the
+//  final. While false, the app shows "champions being verified" and hides the
+//  Reveal button. Set to true and push (deploy) when you are ready to go live.
+//  To rehearse the real ceremony privately first, open:  celebration.html?rehearse=1
+// ============================================================================
+const RESULTS_VERIFIED = false;
+const REHEARSE = (new URLSearchParams(location.search)).get("rehearse")==="1";
+
 const app = document.getElementById("app");
 const $ = (h)=>{const d=document.createElement("div"); d.innerHTML=h; return d.firstElementChild;};
 const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
@@ -393,7 +402,7 @@ function removeMoreHint(){ if(moreHintEl){ moreHintEl.remove(); moreHintEl=null;
 const GALLERY=[
   {intro:true, title:"Special Thanks to Ewan", sub:"Creator of every bobblehead"},
   {img:"pops-bobblehead.jpg",   name:"Pops",   title:"Legendary MVP"},
-  {duo:["nonna-bobblehead.jpg","nana-bobblehead.jpg"], name:"Nonna & Nana", title:"Special Grandchildren MVP"},
+  {duo:["nonna-bobblehead.jpg","nana-bobblehead.jpg"], name:"Nonna & Nana", title:"Special Grandmas' MVP"},
   {img:"nonno-bobblehead.jpg",  name:"Nonno",  title:"IT Department Chief"},
   {img:"boompa-bobblehead.jpg", name:"Boompa", title:"The Legend"},
   {img:"emrys-bobblehead.jpg",  name:"Emrys",  title:"Rising Star"},
@@ -425,7 +434,7 @@ function addGalleryButton(){ const host=document.getElementById("replaywrap"); i
 /* ---------- views ---------- */
 let STATE=null, seq=0;
 function render(){ STATE=compute(); app.innerHTML=""; beamsOn(false); raysOn(false); sparkleOn=false; flashOn=false; stopSpeak(); cancelAuto=true; removeMoreHint(); closeGallery(); document.querySelectorAll(".intro").forEach(e=>e.remove()); stopPad();
-  if(STATE.complete) renderReady(); else renderPreview(); }
+  if(STATE.complete && (RESULTS_VERIFIED||REHEARSE)) renderReady(); else if(STATE.complete) renderPending(); else renderPreview(); }
 function header(){ return "<div class='trophy'>\u{1F3C6}</div><div class='kicker'>Family World Cup 2026</div>"+
   "<h1>The Celebration Podium</h1><div class='sub'>MetLife Stadium · Sunday, July 19, 2026</div>"; }
 function renderReady(){ app.appendChild($("<div class='fade-in'>"+header()+
@@ -443,6 +452,10 @@ function renderPreview(){ app.appendChild($("<div class='fade-in'>"+header()+
   document.getElementById("prev").addEventListener("click", ()=>startReveal(), {passive:true});
   document.getElementById("sim").addEventListener("click", ()=>{ DATA.finalResult=[2,1]; DATA.thirdResult=[2,1]; render(); }, {passive:true}); }
 
+function renderPending(){ app.appendChild($("<div class='fade-in'>"+header()+
+  "<div class='lock'>\u{1F512} The results are in!</div>"+
+  "<span class='badgechip'>Champions being verified</span>"+
+  "<div class='note' style='margin-top:16px'>The final whistle has blown and every point is being double-checked. The official Celebration Podium reveal is coming very soon \u2014 check back shortly! \u{1F3C6}</div></div>")); }
 function podiumScaffold(){ return $("<div class='fade-in'>"+header()+
   "<div id='trophyslot'></div>"+"<div class='stage-title' id='stitle'>&nbsp;</div>"+
   "<div class='podium' id='pod'><div class='col' id='c-silver'></div><div class='col' id='c-gold'></div><div class='col' id='c-bronze'></div></div>"+
