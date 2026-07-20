@@ -385,9 +385,17 @@ function countUp(el,to,dur){ to=Math.round(to); let st=null; const ease=t=>1-Mat
 /* ---------- ELITE add-ons 2: recorded voice, auto-scroll, gallery ---------- */
 let activeAudio=[];
 function stopClips(){ activeAudio.forEach(a=>{ try{a.pause();}catch(e){} }); activeAudio=[]; }
-const CLIP_EXTS=["mp3","m4a","wav","ogg"];
-function playOne(key){ return new Promise(res=>{ let ei=0; function tryExt(){ if(ei>=CLIP_EXTS.length){ res(false); return; } const a=new Audio(IMG+"voice/"+key+"."+CLIP_EXTS[ei]); activeAudio.push(a); a.onended=()=>res(true); a.onerror=()=>{ ei++; tryExt(); }; const pr=a.play(); if(pr&&pr.catch) pr.catch(()=>{ ei++; tryExt(); }); } tryExt(); }); }
-async function say(phraseKey, phraseTTS, name){ if(!announcerOn) return; const nk=name?("name-"+name.toLowerCase().replace(/[^a-z]/g,"")):null; const keys=[phraseKey,nk].filter(Boolean); let ok=true; for(const k of keys){ if(!(await playOne(k))){ ok=false; break; } } if(!ok){ stopClips(); speak((phraseTTS||"")+(name?(" "+name+"!"):"")); } }
+const VOICE_DIRS=["Voice/","voice/"]; const CLIP_EXTS=["m4a","mp3","wav","ogg"];
+function clipUrls(key){ const out=[]; VOICE_DIRS.forEach(d=>CLIP_EXTS.forEach(e=>out.push(IMG+d+key+"."+e))); return out; }
+function playOne(key){ return new Promise(res=>{ const urls=clipUrls(key); let i=0; function tryNext(){ if(i>=urls.length){ res(false); return; } const a=new Audio(urls[i]); activeAudio.push(a); a.onended=()=>res(true); a.onerror=()=>{ i++; tryNext(); }; const pr=a.play(); if(pr&&pr.catch) pr.catch(()=>{ i++; tryNext(); }); } tryNext(); }); }
+async function say(phraseKey, phraseTTS, name, onName){
+  if(!announcerOn){ if(onName) onName(); return; }
+  try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){} stopClips();
+  let ok = await playOne(phraseKey);
+  if(!ok){ speak(phraseTTS||""); await sleep(1100); }
+  if(onName) onName();
+  if(name){ const nk="name-"+name.toLowerCase().replace(/[^a-z]/g,""); const ok2=await playOne(nk); if(!ok2){ speak(name+"!"); await sleep(900); } }
+}
 
 let cancelAuto=false;
 function startAutoScroll(){ cancelAuto=false; const startY=window.scrollY; const target=Math.max(0, document.body.scrollHeight-window.innerHeight); if(target-startY<40) return; const dur=7000, t0=performance.now();
@@ -479,23 +487,25 @@ async function startReveal(){
   setChampionTheme();
   await lightsOn(); if(my!==seq) return;
   if(my!==seq) return; await sleep(500); if(my!==seq) return;
-  setTitle("Ladies and gentlemen…"); drumroll(1.1); timpani(90,0,0.5); buzz(60); say("intro","Ladies and gentlemen!"); await sleep(1500); if(my!==seq) return;
+  setTitle("Ladies and gentlemen…"); drumroll(1.1); timpani(90,0,0.5); buzz(60); await say("intro","Ladies and gentlemen!"); if(my!==seq) return; await sleep(500); if(my!==seq) return;
   setTitle("Your <span class='em'>2026 Family World Cup</span> finishes…"); await sleep(1400); if(my!==seq) return;
 
-  setTitle("In <span class='em'>third place</span>…"); await sleep(1000); if(my!==seq) return;
-  placeCol("c-bronze",ranked[2],3); walkSting(3); chime(523); confetti(40); buzz(80); say("third","In third place...",ranked[2].name); await sleep(1700); if(my!==seq) return;
+  setTitle("In <span class='em'>third place</span>…"); await sleep(700); if(my!==seq) return;
+  await say("third","In third place...",ranked[2].name, ()=>{ placeCol("c-bronze",ranked[2],3); walkSting(3); chime(523); confetti(40); buzz(80); }); if(my!==seq) return; await sleep(900); if(my!==seq) return;
 
-  setTitle("In <span class='em'>second place</span>…"); await sleep(1000); if(my!==seq) return;
-  placeCol("c-silver",ranked[1],2); walkSting(2); chime(659); confetti(70); buzz([60,40,60]); say("second","In second place...",ranked[1].name); await sleep(1800); if(my!==seq) return;
+  setTitle("In <span class='em'>second place</span>…"); await sleep(700); if(my!==seq) return;
+  await say("second","In second place...",ranked[1].name, ()=>{ placeCol("c-silver",ranked[1],2); walkSting(2); chime(659); confetti(70); buzz([60,40,60]); }); if(my!==seq) return; await sleep(1000); if(my!==seq) return;
 
-  setTitle("And your <span class='em'>Family World Cup Champion</span> is…"); riser(2.6); drumroll(2.6); trophyRise(); await sleep(1700); if(my!==seq) return;
+  setTitle("And your <span class='em'>Family World Cup Champion</span> is…"); riser(2.6); drumroll(2.6); trophyRise(); await sleep(1200); if(my!==seq) return;
   await showCountdown(); if(my!==seq) return;
 
-  placeCol("c-gold",ranked[0],1); const gc=document.getElementById("c-gold"); if(gc) gc.classList.add("glow");
-  championTheme(); bloomFlash(); raysOn(true); screenShake(); say("champion","And your Family World Cup champion is...",ranked[0].name); confetti(240); confettiStream(9000); fireworksShow(9000); buzz([120,60,120,60,220]);
-  setTitle("\u{1F451} "+ranked[0].name+" — Champion of the World! \u{1F451}");
-  const rib=document.getElementById("ribbonwrap"); if(rib){ rib.innerHTML="<span class='ribbon'>C H A M P I O N</span>"; setTimeout(()=>{ const r=rib.querySelector(".ribbon"); if(r) r.classList.add("in"); },300); }
-  await sleep(3200); if(my!==seq) return;
+  await say("champion","And your Family World Cup champion is...",ranked[0].name, ()=>{
+    placeCol("c-gold",ranked[0],1); const gc=document.getElementById("c-gold"); if(gc) gc.classList.add("glow");
+    championTheme(); bloomFlash(); raysOn(true); screenShake(); confetti(240); confettiStream(9000); fireworksShow(9000); buzz([120,60,120,60,220]);
+    setTitle("\u{1F451} "+ranked[0].name+" — Champion of the World! \u{1F451}");
+    const rib=document.getElementById("ribbonwrap"); if(rib){ rib.innerHTML="<span class='ribbon'>C H A M P I O N</span>"; setTimeout(()=>{ const r=rib.querySelector(".ribbon"); if(r) r.classList.add("in"); },300); }
+  }); if(my!==seq) return;
+  await sleep(2600); if(my!==seq) return;
 
   showMoreHint(); renderRest(ranked); await sleep(700); if(my!==seq) return;
   renderAwards(awards,ranked);
