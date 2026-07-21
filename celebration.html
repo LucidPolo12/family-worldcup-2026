@@ -385,11 +385,35 @@ function countUp(el,to,dur){ to=Math.round(to); let st=null; const ease=t=>1-Mat
   function f(t){ if(st===null)st=t; const p=Math.min(1,(t-st)/dur); el.textContent=Math.round(to*ease(p)); if(p<1) requestAnimationFrame(f);} requestAnimationFrame(f); }
 
 /* ---------- ELITE add-ons 2: recorded voice, auto-scroll, gallery ---------- */
-let activeAudio=[];
-function stopClips(){ activeAudio.forEach(a=>{ try{a.pause();}catch(e){} }); activeAudio=[]; }
+// Voice clips play through the Web Audio engine (unlocked by the reveal tap),
+// so iOS Safari plays every clip — not just the first. Falls back to TTS per clip.
 const VOICE_DIRS=["Voice/","voice/"]; const CLIP_EXTS=["m4a","mp3","wav","ogg"];
-function clipUrls(key){ const out=[]; VOICE_DIRS.forEach(d=>CLIP_EXTS.forEach(e=>out.push(IMG+d+key+"."+e))); return out; }
-function playOne(key){ return new Promise(res=>{ const urls=clipUrls(key); let i=0; function tryNext(){ if(i>=urls.length){ res(false); return; } const a=new Audio(urls[i]); activeAudio.push(a); a.onended=()=>res(true); a.onerror=()=>{ i++; tryNext(); }; const pr=a.play(); if(pr&&pr.catch) pr.catch(()=>{ i++; tryNext(); }); } tryNext(); }); }
+function clipUrls(key){ const out=[]; VOICE_DIRS.forEach(function(d){ CLIP_EXTS.forEach(function(e){ out.push(IMG+d+key+"."+e); }); }); return out; }
+let clipBufs={}, clipLoading={}, activeSrcs=[];
+function stopClips(){ activeSrcs.forEach(function(s){ try{s.stop();}catch(e){} }); activeSrcs=[]; }
+function loadClip(key){
+  if(key in clipBufs) return Promise.resolve(clipBufs[key]);
+  if(clipLoading[key]) return clipLoading[key];
+  clipLoading[key] = (async function(){
+    ensureAudio(); if(!AC){ clipBufs[key]=null; return null; }
+    const urls=clipUrls(key);
+    for(let i=0;i<urls.length;i++){
+      try{ const r=await fetch(urls[i]); if(!r||!r.ok) continue; const ab=await r.arrayBuffer();
+        const buf=await AC.decodeAudioData(ab.slice(0)); clipBufs[key]=buf; return buf; }
+      catch(e){ /* try next url/ext */ }
+    }
+    clipBufs[key]=null; return null;
+  })();
+  return clipLoading[key];
+}
+function preloadVoices(names){
+  ["intro","third","second","champion"].forEach(loadClip);
+  (names||[]).forEach(function(n){ if(n) loadClip("name-"+n.toLowerCase().replace(/[^a-z]/g,"")); });
+}
+function playBuf(buf){ return new Promise(function(res){ if(!AC||!buf){ res(false); return; }
+  var s=AC.createBufferSource(); s.buffer=buf; s.connect(MASTER); s.onended=function(){ res(true); };
+  activeSrcs.push(s); try{ s.start(); }catch(e){ res(false); } }); }
+async function playOne(key){ const buf=await loadClip(key); if(!buf) return false; return await playBuf(buf); }
 async function say(phraseKey, phraseTTS, name, onName){
   if(!announcerOn){ if(onName) onName(); return; }
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){} stopClips();
@@ -449,6 +473,7 @@ function header(){ return "<div class='trophy'>\u{1F3C6}</div><div class='kicker
   "<h1>The Celebration Podium</h1><div class='sub'>MetLife Stadium · Sunday, July 19, 2026</div>"; }
 function renderReady(){ app.appendChild($("<div class='fade-in'>"+header()+
   "<div class='sub' style='margin-top:14px'>All results are in and the standings are final.</div>"+
+  "<div style='margin-top:16px;font-weight:900;color:var(--gold);font-size:15px'>🔊 Tap the button to turn on sound</div>"+
   "<button id='go' class='btn big'>✨ Reveal the Champions ✨</button>"+
   "<div class='note'>Tap when the whole family is watching. Turn your volume up. \u{1F50A}</div></div>"));
   document.getElementById("go").addEventListener("click", startReveal, {passive:true}); }
@@ -487,6 +512,7 @@ async function startReveal(){
   sparkleOn=true; flashOn=true; startPad();
   const ranked=STATE.ranked, awards=buildAwards(ranked);
   setChampionTheme();
+  preloadVoices([ranked[0]&&ranked[0].name, ranked[1]&&ranked[1].name, ranked[2]&&ranked[2].name]);
   await lightsOn(); if(my!==seq) return;
   if(my!==seq) return; await sleep(500); if(my!==seq) return;
   setTitle("Ladies and gentlemen…"); drumroll(1.1); timpani(90,0,0.5); buzz(60); await say("intro","Ladies and gentlemen!"); if(my!==seq) return; await sleep(500); if(my!==seq) return;
