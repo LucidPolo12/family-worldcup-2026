@@ -282,6 +282,7 @@ function buildAwards(ranked){
 /* ---------- audio: synthesized musical score + SFX (no files) ---------- */
 let AC=null, MASTER=null, MUSIC=null, SFX=null, muted=false;
 function ensureAudio(){
+  try{ if(navigator.audioSession) navigator.audioSession.type="playback"; }catch(e){}
   if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)();
     MASTER=AC.createGain(); MASTER.gain.value=muted?0:0.9; MASTER.connect(AC.destination);
     MUSIC=AC.createGain(); MUSIC.gain.value=0.55; MUSIC.connect(MASTER);
