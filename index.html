@@ -260,6 +260,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
 <body>
 <nav class="topnav"><div class="row" id="nav">
   <a href="#top">🏠 Home</a>
+  <a href="celebration.html">🎉 Celebration</a>
   <a href="#standings">🏆 Standings</a>
   <a href="#today">📅 Today</a>
   <a href="#badges">🎖️ Badges</a>
@@ -288,6 +289,8 @@ table.gt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div><a class="cta" href="WorldCupPicks.html" target="_blank" rel="noopener">⚽ Make Your Picks →</a></div>
 </header>
+
+<a href="celebration.html" style="display:block;max-width:820px;margin:14px auto 0;padding:16px 22px;border-radius:16px;text-decoration:none;text-align:center;font-weight:900;font-size:17px;color:#241a00;background:linear-gradient(180deg,#ffe27a,#ffb300);box-shadow:0 10px 30px rgba(255,180,40,.4)">🏆 The Family World Cup Celebration Podium — tap to enter →</a>
 
 <div class="wrap">
   <section class="sec" id="standings">
@@ -551,7 +554,7 @@ function syncStandingsFromResults(){
 function rankStandings(){
   syncStandingsFromResults();
   const ff=finalFour(); // exact-finish bonuses kick in as the final four are decided
-  const s = DATA.standings.map(function(x){ const bonus=podiumBonus(x,ff); return Object.assign({}, x, {bonus:bonus, total:(x.matchPts||0)+bonus}); });
+  const s = DATA.standings.map(function(x){ const bonus=podiumBonus(x,ff); return Object.assign({}, x, {bonus:bonus, total:(x.matchPts||0)+bonus+(x.gbPts||0)}); });
   s.sort((a,b)=> b.total-a.total || b.exact-a.exact || b.correct-a.correct || a.name.localeCompare(b.name));
   let rank=1;
   s.forEach((x,i)=>{ if(i>0 && (x.total<s[i-1].total)) rank=i+1; x.rank=rank; });
@@ -580,10 +583,11 @@ function renderLB(){
         (pod.fourth?'<span>🏅 '+flag(pod.fourth)+' '+pod.fourth+'</span>':'')+
       '</div>' : '';
     const bonusMeta = x.bonus>0 ? ' · <b style="color:var(--gold2)">+'+x.bonus+' bonus</b>' : '';
+    const gbMeta = (x.gbPts>0) ? ' · <b style="color:var(--gold2)">+'+x.gbPts+' GB</b>' : '';
     return '<div class="lbrow '+(x.rank===1?'r1':'')+'">'+
       '<div class="rk">'+(x.rank===1?'🥇':x.rank)+'</div>'+
       '<div><div class="nm">'+pavatar(x.name,28)+x.name+' '+champ+'</div>'+
-      '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct'+bonusMeta+'</div>'+podline+'</div>'+
+      '<div class="meta">'+x.picks.length+' picks · '+x.exact+' exact · '+x.correct+' correct'+bonusMeta+gbMeta+'</div>'+podline+'</div>'+
       '<div class="tot">'+movement(x.name,x.rank)+'<span class="ptsblk">'+x.total+'<small>pts</small></span></div>'+
     '</div>';
   }).join('');
@@ -1399,7 +1403,7 @@ function finalFour(){
 }
 function challengeTotals(champion, runnerup, third, fourth){
   const ff={champion:champion, runnerup:runnerup, third:third, fourth:fourth};
-  return (DATA.standings||[]).map(function(p){ const bonus=podiumBonus(p,ff); return {name:p.name, total:(p.matchPts||0)+bonus, bonus:bonus}; })
+  return (DATA.standings||[]).map(function(p){ const bonus=podiumBonus(p,ff); return {name:p.name, total:(p.matchPts||0)+bonus+(p.gbPts||0), bonus:bonus}; })
     .sort(function(a,b){ return b.total-a.total || a.name.localeCompare(b.name); });
 }
 function leaderLabel(rows){
